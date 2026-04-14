@@ -1,5 +1,6 @@
 import { useTabStore } from "../store/tab-store";
 import { TabBar } from "./TabBar";
+import { EditorTab } from "./EditorTab";
 import { TerminalTab } from "./TerminalTab";
 
 interface TabGroupProps {
@@ -46,21 +47,14 @@ export function TabGroup({ groupId }: TabGroupProps) {
               />
             );
           }
-          // Editor placeholder
           return (
-            <div
+            <EditorTab
               key={tab.id}
-              style={{
-                display: isActive ? "flex" : "none",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                color: "var(--text-secondary)",
-              }}
-            >
-              Editor: {tab.filePath ?? "untitled"}
-            </div>
+              tabId={tab.id}
+              groupId={groupId}
+              filePath={tab.filePath ?? ""}
+              isActive={isActive}
+            />
           );
         })}
       </div>
