@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { FuzzyFinder } from "./components/FuzzyFinder";
 import { useSidebarStore } from "./store/sidebar-store";
 import { useTabStore, createTerminalTab } from "./store/tab-store";
+import { ToastContainer } from "./components/Toast";
 import "./styles/globals.css";
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
         isOpen={fuzzyFinderOpen}
         onClose={() => setFuzzyFinderOpen(false)}
       />
+      <ToastContainer />
     </>
   );
 }
