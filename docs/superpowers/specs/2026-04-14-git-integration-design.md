@@ -18,7 +18,7 @@ A new Rust module that wraps `std::process::Command` calls to the system `git` b
 | `git_diff` | `git diff [--cached] -- <path>` | Unified diff for a single file |
 | `git_stage` | `git add -- <paths>` | Stage one or more files |
 | `git_unstage` | `git restore --staged -- <paths>` | Unstage one or more files |
-| `git_discard` | `git checkout -- <path>` | Discard working tree changes for a file |
+| `git_discard` | `git restore -- <path>` | Discard working tree changes for a file |
 | `git_commit` | `git commit -m <msg>` | Commit staged changes |
 | `git_log` | `git log --format=<json-friendly>` | Paginated commit history (50 per page) |
 | `git_branches` | `git branch -a --format=...` | List local and remote branches |
@@ -58,11 +58,29 @@ enum FileStatus {
 }
 ```
 
+**Stash entry:**
+
+```rust
+struct StashEntry {
+    index: u32,       // Stash index (0, 1, 2, ...)
+    message: String,  // Stash message (user-provided or auto-generated)
+    branch: String,   // Branch the stash was created on
+    timestamp: String, // ISO 8601 timestamp
+}
+```
+
 ### Frontend: State Management
 
 **`git-store.ts`** (Zustand) — single source of truth for all git state:
 
 ```typescript
+interface StashEntry {
+    index: number;
+    message: string;
+    branch: string;
+    timestamp: string;
+}
+
 interface GitStore {
     isGitRepo: boolean;
     gitAvailable: boolean;
@@ -135,7 +153,7 @@ Each file node in the existing `FileTreeNode.tsx` component gains:
 - **Status letter** (A, M, D, ?) right-aligned in the row, same color as filename
 - **Deleted files** get strikethrough text
 
-**Directory propagation:** Parent directories inherit the "most important" status from their children, with priority: A > M > D > ?. The badge appears at reduced opacity (0.7) to distinguish from direct file status. This ensures collapsed directories still signal that something changed inside.
+**Directory propagation:** Parent directories inherit the "most important" status from their children, with priority: C > A > M > D > ?. Conflicted is highest because it requires user action. The badge appears at reduced opacity (0.7) to distinguish from direct file status. This ensures collapsed directories still signal that something changed inside.
 
 ### Inline Diff View
 
@@ -208,8 +226,51 @@ Clicking a changed file in the Git panel opens an inline diff in a new editor ta
 
 - `Cmd+Shift+G` — focus/toggle Git sidebar panel (matches VS Code convention)
 
+## Overflow Menu Features
+
+### View Log
+
+Accessed from the `⋯` overflow menu. Opens a **new tab** with type `"git-log"` titled "Git Log".
+
+**Layout:** A scrollable list of commits, each showing:
+- Abbreviated hash (7 chars, monospace, dimmed)
+- Commit message (first line, truncated)
+- Author name
+- Relative timestamp ("2 hours ago")
+
+**Pagination:** Initial load fetches 50 commits. Scrolling to the bottom triggers loading the next 50. A small "Loading..." indicator appears during fetch.
+
+**Interaction:** Clicking a commit is a no-op in v1 (future: show commit diff). The log is read-only.
+
+### Merge / Rebase
+
+Accessed from the `⋯` overflow menu. Both open a **branch picker modal** (small dropdown anchored to the menu button) listing local branches. The user selects a target branch and confirms.
+
+**On success:** Toast notification ("Merged feature-x into main") and status refresh.
+
+**On conflict:**
+- Toast notification: "Merge conflict — resolve conflicts and commit, or abort"
+- Conflicted files appear in the git panel with `C` status
+- A persistent banner appears at the top of the Git panel: "Merge in progress" (or "Rebase in progress") with **Abort** and **Continue** buttons
+- Abort runs `git merge --abort` / `git rebase --abort`, Continue runs `git rebase --continue` (after user resolves conflicts and stages)
+
+### Stash
+
+The `⋯` menu shows a "Stash" submenu with three actions:
+- **Stash Changes** — runs `git stash push`. If working tree is clean, the option is disabled. No message prompt in v1 (uses git's default message).
+- **Pop Stash** — runs `git stash pop`. Disabled if stash list is empty. Pops the most recent entry (index 0).
+- **Stash List** — opens a small dropdown below the menu showing stash entries (index, message, relative time). Each entry has a "Pop" and "Drop" action on hover. Scrollable if more than 5 entries.
+
 ## Testing
 
 - **Rust unit tests** in `git_service.rs`: test output parsing for `--porcelain=v2` format with various file states (modified, added, deleted, renamed, conflicted)
 - **Integration tests**: test against a real temporary git repo (using `tempfile` crate already in dev-deps)
-- **Frontend**: manual testing of the UI components and interactions
+- **Frontend**: manual testing covering these scenarios:
+  - Stage/unstage single file and "all" button
+  - Commit flow (message input, commit, status refresh)
+  - Diff tab opens for staged and unstaged files
+  - Branch switching via branch picker
+  - File tree indicators update after stage/commit
+  - Conflict state display (C badges, merge-in-progress banner)
+  - Overflow menu actions (push, pull, stash, merge)
+  - Non-git-repo and git-not-installed states
