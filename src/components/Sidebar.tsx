@@ -1,9 +1,10 @@
 import { useRef, useCallback } from "react";
 import { useSidebarStore } from "../store/sidebar-store";
 import { FileTree } from "./FileTree";
+import { SearchPanel } from "./SearchPanel";
 
 export function Sidebar() {
-  const { visible, position, width, setWidth } = useSidebarStore();
+  const { visible, position, width, setWidth, activePanel, setActivePanel } = useSidebarStore();
   const resizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
@@ -68,17 +69,33 @@ export function Sidebar() {
     >
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div style={{
-          padding: "8px 12px",
-          color: "var(--text-secondary)",
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: 1,
+          display: "flex",
           userSelect: "none",
+          borderBottom: "1px solid var(--border)",
         }}>
-          Explorer
+          {(["files", "search"] as const).map((panel) => (
+            <button
+              key={panel}
+              onClick={() => setActivePanel(panel)}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                background: "none",
+                border: "none",
+                borderBottom: activePanel === panel ? "2px solid var(--accent)" : "2px solid transparent",
+                color: activePanel === panel ? "var(--text-primary)" : "var(--text-secondary)",
+                cursor: "pointer",
+              }}
+            >
+              {panel === "files" ? "Files" : "Search"}
+            </button>
+          ))}
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: "0 4px" }}>
-          <FileTree />
+          {activePanel === "files" ? <FileTree /> : <SearchPanel />}
         </div>
       </div>
       {resizeHandle}

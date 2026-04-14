@@ -14,6 +14,12 @@ function App() {
         e.preventDefault();
         setFuzzyFinderOpen((o) => !o);
       }
+      if (e.metaKey && e.shiftKey && e.key === "f") {
+        e.preventDefault();
+        const sidebar = useSidebarStore.getState();
+        if (!sidebar.visible) sidebar.toggle();
+        sidebar.setActivePanel("search");
+      }
       if (e.metaKey && e.key === "b") {
         e.preventDefault();
         toggleSidebar();
