@@ -143,6 +143,7 @@ Full-text search (Cmd+Shift+F):
 | Search timeout | Cancel after 10 seconds, show partial results with "Search timed out" message |
 | File watcher disconnect | Auto-reconnect. Manual "Refresh" button as fallback |
 | Large file opened in editor | Warn if file > 5MB. Offer read-only mode for very large files |
+| Unsaved changes on close/quit | Show confirmation dialog: Save / Don't Save / Cancel. Per-tab for Cmd+W, bulk for Cmd+Q |
 
 ## Keyboard Shortcuts
 
@@ -155,7 +156,8 @@ Full-text search (Cmd+Shift+F):
 | `Cmd+N` | New editor tab |
 | `Cmd+W` | Close current tab |
 | `Cmd+S` | Save file |
-| `Cmd+\` | Split tab group |
+| `Cmd+\` | Split tab group vertically (default) |
+| `Cmd+Shift+\` | Split tab group horizontally |
 | `Cmd+1/2/3` | Focus tab group 1/2/3 |
 
 ## Visual Style
