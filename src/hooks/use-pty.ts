@@ -14,25 +14,32 @@ export function usePty({ cols, rows, cwd, onData, onExit }: UsePtyOptions) {
   const ptyIdRef = useRef<string | null>(null);
   const unlistenOutputRef = useRef<UnlistenFn | null>(null);
   const unlistenExitRef = useRef<UnlistenFn | null>(null);
+  const spawnPromiseRef = useRef<Promise<string> | null>(null);
 
-  const spawn = useCallback(async () => {
-    // Generate ID client-side so we can set up listeners BEFORE spawning.
-    // This prevents the race where PTY output arrives before the listener exists.
+  const spawn = useCallback(() => {
     const id = crypto.randomUUID();
-    ptyIdRef.current = id;
 
-    unlistenOutputRef.current = await listen<string>(
-      `pty-output-${id}`,
-      (event) => onData(event.payload)
-    );
-    unlistenExitRef.current = await listen<void>(
-      `pty-exit-${id}`,
-      () => onExit()
-    );
+    // Store the full spawn pipeline as a promise so kill() can await it.
+    const promise = (async () => {
+      // Set up listeners BEFORE spawning so we never miss the initial prompt.
+      unlistenOutputRef.current = await listen<string>(
+        `pty-output-${id}`,
+        (event) => onData(event.payload)
+      );
+      unlistenExitRef.current = await listen<void>(
+        `pty-exit-${id}`,
+        () => onExit()
+      );
 
-    await invoke("spawn_pty", { id, cols, rows, cwd });
+      await invoke("spawn_pty", { id, cols, rows, cwd });
 
-    return id;
+      // Only expose the ID after the Rust side confirms the PTY exists.
+      ptyIdRef.current = id;
+      return id;
+    })();
+
+    spawnPromiseRef.current = promise;
+    return promise;
   }, [cols, rows, cwd, onData, onExit]);
 
   const write = useCallback(async (data: string) => {
@@ -48,10 +55,15 @@ export function usePty({ cols, rows, cwd, onData, onExit }: UsePtyOptions) {
   }, []);
 
   const kill = useCallback(async () => {
+    // Wait for any in-flight spawn to finish so we can clean it up.
+    if (spawnPromiseRef.current) {
+      try { await spawnPromiseRef.current; } catch { /* spawn failed, nothing to kill */ }
+      spawnPromiseRef.current = null;
+    }
     if (ptyIdRef.current) {
       unlistenOutputRef.current?.();
       unlistenExitRef.current?.();
-      await invoke("kill_pty", { id: ptyIdRef.current });
+      await invoke("kill_pty", { id: ptyIdRef.current }).catch(() => {});
       ptyIdRef.current = null;
     }
   }, []);
