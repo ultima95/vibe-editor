@@ -27,12 +27,17 @@ A new Rust module that wraps `std::process::Command` calls to the system `git` b
 | `git_delete_branch` | `git branch -d <branch>` | Delete a local branch |
 | `git_merge` | `git merge <branch>` | Merge a branch into current |
 | `git_rebase` | `git rebase <branch>` | Rebase current branch onto target |
-| `git_stash_push` | `git stash push -m <msg>` | Stash working changes |
+| `git_stash_push` | `git stash push [-m <msg>]` | Stash working changes (message optional) |
 | `git_stash_pop` | `git stash pop [index]` | Pop a stash entry |
 | `git_stash_list` | `git stash list --format=...` | List stash entries |
 | `git_push` | `git push` | Push to remote |
 | `git_pull` | `git pull` | Pull from remote |
 | `git_remote_status` | `git rev-list --left-right --count HEAD...@{u}` | Ahead/behind counts |
+| `git_init` | `git init` | Initialize a new git repo in the workspace |
+| `git_stash_drop` | `git stash drop stash@{<index>}` | Drop a specific stash entry |
+| `git_merge_abort` | `git merge --abort` | Abort an in-progress merge |
+| `git_rebase_abort` | `git rebase --abort` | Abort an in-progress rebase |
+| `git_rebase_continue` | `git rebase --continue` | Continue rebase after resolving conflicts |
 
 Each command runs in the workspace root directory. Errors from git (non-zero exit, stderr) are returned as `Result::Err(String)` to the frontend.
 
@@ -135,6 +140,7 @@ Added as a third tab in the sidebar alongside "Files" and "Search". The sidebar 
 - Added/new: green (`#a6e3a1`)
 - Modified: yellow (`#f9e2af`)
 - Deleted: red (`#f38ba8`), filename has strikethrough
+- Renamed: green (`#a6e3a1`), same as Added
 - Untracked: teal (`#94e2d5`)
 - Conflicted: red/yellow badge (`C`)
 
@@ -251,8 +257,9 @@ Accessed from the `⋯` overflow menu. Both open a **branch picker modal** (smal
 **On conflict:**
 - Toast notification: "Merge conflict — resolve conflicts and commit, or abort"
 - Conflicted files appear in the git panel with `C` status
-- A persistent banner appears at the top of the Git panel: "Merge in progress" (or "Rebase in progress") with **Abort** and **Continue** buttons
-- Abort runs `git merge --abort` / `git rebase --abort`, Continue runs `git rebase --continue` (after user resolves conflicts and stages)
+- A persistent banner appears at the top of the Git panel with context-specific actions:
+  - **During merge:** "Merge in progress" with **Abort** button only. The user resolves conflicts, stages files, and commits normally through the commit area. (No "Continue" — merge completion is just a regular commit.)
+  - **During rebase:** "Rebase in progress" with **Abort** and **Continue** buttons. Continue runs `git rebase --continue` after the user resolves conflicts and stages.
 
 ### Stash
 
