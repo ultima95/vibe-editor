@@ -1,5 +1,5 @@
 import { Sidebar } from "./Sidebar";
-import { TerminalTab } from "./TerminalTab";
+import { TabGroupManager } from "./TabGroupManager";
 import { useSidebarStore } from "../store/sidebar-store";
 
 export function AppShell() {
@@ -17,7 +17,7 @@ export function AppShell() {
     >
       <Sidebar />
       <div style={{ flex: 1, overflow: "hidden" }}>
-        <TerminalTab isActive={true} />
+        <TabGroupManager />
       </div>
     </div>
   );
