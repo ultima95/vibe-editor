@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
@@ -14,27 +14,14 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const initializedRef = useRef(false);
 
-  const handleData = useCallback((data: string) => {
-    terminalRef.current?.write(data);
-  }, []);
-
-  const handleExit = useCallback(() => {
-    terminalRef.current?.write("\r\n[Process exited]\r\n");
-  }, []);
-
-  const { spawn, write, resize } = usePty({
-    cols: 80,
-    rows: 24,
-    cwd,
-    onData: handleData,
-    onExit: handleExit,
-  });
+  const { spawn, write, resize } = usePty();
 
   useEffect(() => {
-    if (!containerRef.current || initializedRef.current) return;
-    initializedRef.current = true;
+    if (!containerRef.current) return;
+
+    let cancelled = false;
+    let ptyCleanup: (() => Promise<void>) | null = null;
 
     const terminal = new Terminal({
       fontSize: 14,
@@ -74,17 +61,34 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     fitAddonRef.current = fitAddon;
 
     const dims = fitAddon.proposeDimensions();
-    spawn().then(() => {
-      if (dims) {
-        resize(dims.cols, dims.rows);
+    spawn({
+      cols: dims?.cols ?? 80,
+      rows: dims?.rows ?? 24,
+      cwd,
+      onData: (data) => terminal.write(data),
+      onExit: () => terminal.write("\r\n[Process exited]\r\n"),
+    }).then(({ cleanup }) => {
+      if (cancelled) {
+        cleanup();
+        return;
       }
+      ptyCleanup = cleanup;
+      if (dims) resize(dims.cols, dims.rows);
     }).catch((err) => {
-      console.error("Failed to spawn PTY:", err);
-      terminal.write(`\r\n\x1b[31mFailed to spawn terminal: ${err}\x1b[0m\r\n`);
+      if (!cancelled) {
+        console.error("Failed to spawn PTY:", err);
+        terminal.write(`\r\n\x1b[31mFailed to spawn terminal: ${err}\x1b[0m\r\n`);
+      }
     });
 
-    return () => { terminal.dispose(); };
-  }, []);
+    return () => {
+      cancelled = true;
+      terminal.dispose();
+      terminalRef.current = null;
+      fitAddonRef.current = null;
+      ptyCleanup?.();
+    };
+  }, [spawn, write, resize, cwd]);
 
   // Handle resize when tab becomes active or window resizes
   useEffect(() => {
