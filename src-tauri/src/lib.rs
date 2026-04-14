@@ -1,5 +1,6 @@
 pub mod fs_service;
 pub mod pty_manager;
+pub mod search;
 
 use pty_manager::PtyManager;
 use std::io::Read;
@@ -121,6 +122,24 @@ fn cmd_copy_path(src: String, dst: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn fuzzy_search(
+    query: String,
+    workspace_root: String,
+    limit: usize,
+) -> Result<Vec<search::SearchResult>, String> {
+    search::fuzzy_search(&query, &workspace_root, limit)
+}
+
+#[tauri::command]
+fn text_search(
+    query: String,
+    workspace_root: String,
+    limit: usize,
+) -> Result<Vec<search::TextSearchResult>, String> {
+    search::text_search(&query, &workspace_root, limit)
+}
+
+#[tauri::command]
 fn cmd_get_default_workspace() -> Result<String, String> {
     std::env::current_dir()
         .map(|p| p.to_string_lossy().to_string())
@@ -152,6 +171,8 @@ pub fn run() {
             cmd_delete_path,
             cmd_copy_path,
             cmd_get_default_workspace,
+            fuzzy_search,
+            text_search,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
