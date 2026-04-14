@@ -1,3 +1,4 @@
+pub mod fs_service;
 pub mod pty_manager;
 
 use pty_manager::PtyManager;
@@ -68,6 +69,47 @@ fn kill_pty(
     state.pty_manager.kill_pty(&id)
 }
 
+#[tauri::command]
+fn cmd_read_file(path: String) -> Result<String, String> {
+    fs_service::read_file(&path)
+}
+
+#[tauri::command]
+fn cmd_write_file(path: String, content: String) -> Result<(), String> {
+    fs_service::write_file(&path, &content)
+}
+
+#[tauri::command]
+fn cmd_list_directory(path: String) -> Result<Vec<fs_service::DirEntry>, String> {
+    fs_service::list_directory(&path)
+}
+
+#[tauri::command]
+fn cmd_rename_path(old_path: String, new_path: String) -> Result<(), String> {
+    fs_service::rename_path(&old_path, &new_path)
+}
+
+#[tauri::command]
+fn cmd_delete_path(path: String) -> Result<(), String> {
+    fs_service::delete_path(&path)
+}
+
+#[tauri::command]
+fn cmd_copy_path(src: String, dst: String) -> Result<(), String> {
+    fs_service::copy_path(&src, &dst)
+}
+
+#[tauri::command]
+fn cmd_get_default_workspace() -> Result<String, String> {
+    std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .or_else(|_| {
+            dirs::home_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .ok_or_else(|| "Could not determine default workspace".to_string())
+        })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -80,6 +122,13 @@ pub fn run() {
             write_pty,
             resize_pty,
             kill_pty,
+            cmd_read_file,
+            cmd_write_file,
+            cmd_list_directory,
+            cmd_rename_path,
+            cmd_delete_path,
+            cmd_copy_path,
+            cmd_get_default_workspace,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
