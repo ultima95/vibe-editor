@@ -42,7 +42,7 @@ export function TabGroup({ groupId }: TabGroupProps) {
             return (
               <TerminalTab
                 key={tab.id}
-                isActive={isActive && isActiveGroup}
+                isActive={isActive}
               />
             );
           }
