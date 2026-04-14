@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useSidebarStore } from "../store/sidebar-store";
+import { FileTree } from "./FileTree";
 
 export function Sidebar() {
   const { visible, position, width, setWidth } = useSidebarStore();
@@ -77,7 +78,7 @@ export function Sidebar() {
           Explorer
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: "0 4px" }}>
-          <div style={{ color: "var(--text-muted)", padding: "8px" }}>No folder open</div>
+          <FileTree />
         </div>
       </div>
       {resizeHandle}
