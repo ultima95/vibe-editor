@@ -170,10 +170,28 @@ fn save_config(config: config::AppConfig) -> Result<(), String> {
     config::save_config(&config)
 }
 
+#[tauri::command]
+fn cmd_get_recent_projects() -> Vec<String> {
+    config::get_recent_projects()
+}
+
+#[tauri::command]
+fn cmd_add_recent_project(path: String) -> Result<Vec<String>, String> {
+    config::add_recent_project(&path)
+}
+
+#[tauri::command]
+fn unwatch_directory(state: State<'_, Arc<AppState>>) -> Result<(), String> {
+    let mut watcher = state.fs_watcher.lock().unwrap();
+    *watcher = None;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(Arc::new(AppState {
             pty_manager: PtyManager::new(),
             fs_watcher: Mutex::new(None),
@@ -195,6 +213,9 @@ pub fn run() {
             text_search,
             load_config,
             save_config,
+            cmd_get_recent_projects,
+            cmd_add_recent_project,
+            unwatch_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

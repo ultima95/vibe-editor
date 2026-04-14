@@ -12,6 +12,8 @@ pub struct AppConfig {
     pub font_size: u16,
     #[serde(default = "default_font_family")]
     pub font_family: String,
+    #[serde(default)]
+    pub recent_projects: Vec<String>,
 }
 
 fn default_sidebar_position() -> String { "left".into() }
@@ -26,6 +28,7 @@ impl Default for AppConfig {
             sidebar_visible: default_sidebar_visible(),
             font_size: default_font_size(),
             font_family: default_font_family(),
+            recent_projects: Vec::new(),
         }
     }
 }
@@ -52,6 +55,22 @@ pub fn save_config(config: &AppConfig) -> Result<(), String> {
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
     fs::write(&path, content)
         .map_err(|e| format!("Failed to write config: {}", e))
+}
+
+const MAX_RECENT_PROJECTS: usize = 10;
+
+pub fn add_recent_project(path: &str) -> Result<Vec<String>, String> {
+    let mut config = load_config();
+    config.recent_projects.retain(|p| p != path);
+    config.recent_projects.insert(0, path.to_string());
+    config.recent_projects.truncate(MAX_RECENT_PROJECTS);
+    save_config(&config)?;
+    Ok(config.recent_projects)
+}
+
+pub fn get_recent_projects() -> Vec<String> {
+    let config = load_config();
+    config.recent_projects
 }
 
 #[cfg(test)]
