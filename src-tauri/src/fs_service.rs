@@ -1,6 +1,8 @@
+use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
 use std::fs;
 use std::path::Path;
+use std::sync::mpsc;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct DirEntry {
@@ -8,6 +10,36 @@ pub struct DirEntry {
     pub path: String,
     pub is_dir: bool,
     pub size: u64,
+}
+
+pub struct FsWatcher {
+    _watcher: RecommendedWatcher,
+}
+
+pub fn watch_directory(
+    path: &str,
+    callback: impl Fn(Event) + Send + 'static,
+) -> Result<FsWatcher, String> {
+    let (tx, rx) = mpsc::channel();
+
+    let mut watcher = notify::recommended_watcher(move |res: Result<Event, _>| {
+        if let Ok(event) = res {
+            let _ = tx.send(event);
+        }
+    })
+    .map_err(|e| format!("Failed to create watcher: {}", e))?;
+
+    watcher
+        .watch(Path::new(path), RecursiveMode::Recursive)
+        .map_err(|e| format!("Failed to watch {}: {}", path, e))?;
+
+    std::thread::spawn(move || {
+        while let Ok(event) = rx.recv() {
+            callback(event);
+        }
+    });
+
+    Ok(FsWatcher { _watcher: watcher })
 }
 
 pub fn read_file(path: &str) -> Result<String, String> {

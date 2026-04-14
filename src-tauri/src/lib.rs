@@ -3,11 +3,12 @@ pub mod pty_manager;
 
 use pty_manager::PtyManager;
 use std::io::Read;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 
 struct AppState {
     pty_manager: PtyManager,
+    fs_watcher: Mutex<Option<fs_service::FsWatcher>>,
 }
 
 #[tauri::command]
@@ -70,6 +71,26 @@ fn kill_pty(
 }
 
 #[tauri::command]
+fn watch_directory(
+    state: State<'_, Arc<AppState>>,
+    app: AppHandle,
+    path: String,
+) -> Result<(), String> {
+    let app_handle = app.clone();
+    let watcher = fs_service::watch_directory(&path, move |event| {
+        let _ = app_handle.emit(
+            "fs-change",
+            serde_json::json!({
+                "kind": format!("{:?}", event.kind),
+                "paths": event.paths.iter().map(|p| p.to_string_lossy().to_string()).collect::<Vec<_>>(),
+            }),
+        );
+    })?;
+    *state.fs_watcher.lock().unwrap() = Some(watcher);
+    Ok(())
+}
+
+#[tauri::command]
 fn cmd_read_file(path: String) -> Result<String, String> {
     fs_service::read_file(&path)
 }
@@ -116,12 +137,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(AppState {
             pty_manager: PtyManager::new(),
+            fs_watcher: Mutex::new(None),
         }))
         .invoke_handler(tauri::generate_handler![
             spawn_pty,
             write_pty,
             resize_pty,
             kill_pty,
+            watch_directory,
             cmd_read_file,
             cmd_write_file,
             cmd_list_directory,
