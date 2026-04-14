@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { AppShell } from "./components/AppShell";
 import { FuzzyFinder } from "./components/FuzzyFinder";
 import { useSidebarStore } from "./store/sidebar-store";
@@ -9,6 +10,14 @@ import "./styles/globals.css";
 function App() {
   const [fuzzyFinderOpen, setFuzzyFinderOpen] = useState(false);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
+
+  useEffect(() => {
+    invoke<{ sidebar_position: string; sidebar_visible: boolean }>("load_config").then((config) => {
+      const sidebar = useSidebarStore.getState();
+      sidebar.setPosition(config.sidebar_position as "left" | "right");
+      if (config.sidebar_visible !== sidebar.visible) sidebar.toggle();
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

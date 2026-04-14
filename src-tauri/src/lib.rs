@@ -1,3 +1,4 @@
+pub mod config;
 pub mod fs_service;
 pub mod pty_manager;
 pub mod search;
@@ -150,6 +151,16 @@ fn cmd_get_default_workspace() -> Result<String, String> {
         })
 }
 
+#[tauri::command]
+fn load_config() -> config::AppConfig {
+    config::load_config()
+}
+
+#[tauri::command]
+fn save_config(config: config::AppConfig) -> Result<(), String> {
+    config::save_config(&config)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -173,6 +184,8 @@ pub fn run() {
             cmd_get_default_workspace,
             fuzzy_search,
             text_search,
+            load_config,
+            save_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
