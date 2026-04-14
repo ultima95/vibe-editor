@@ -13,6 +13,7 @@ export function TabGroup({ groupId }: TabGroupProps) {
   const setActiveTab = useTabStore((s) => s.setActiveTab);
   const removeTab = useTabStore((s) => s.removeTab);
   const setActiveGroupId = useTabStore((s) => s.setActiveGroupId);
+  const moveTab = useTabStore((s) => s.moveTab);
 
   if (!group) return null;
 
@@ -33,8 +34,10 @@ export function TabGroup({ groupId }: TabGroupProps) {
       <TabBar
         tabs={group.tabs}
         activeTabId={group.activeTabId}
+        groupId={groupId}
         onSelectTab={(tabId) => setActiveTab(groupId, tabId)}
         onCloseTab={(tabId) => removeTab(groupId, tabId)}
+        onDropTab={(tabId, fromGroupId) => moveTab(fromGroupId, groupId, tabId)}
       />
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         {group.tabs.map((tab) => {

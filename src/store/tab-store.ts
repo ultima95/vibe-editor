@@ -72,7 +72,7 @@ interface TabStore {
   setActiveTab: (groupId: string, tabId: string) => void;
   moveTab: (fromGroupId: string, toGroupId: string, tabId: string) => void;
 
-  splitGroup: (groupId: string, direction: SplitDirection, newTab: Tab) => void;
+  splitGroup: (groupId: string, direction: SplitDirection, newTab: Tab, insertBefore?: boolean) => void;
   removeGroup: (groupId: string) => void;
 
   getActiveGroup: () => TabGroup | undefined;
@@ -191,17 +191,18 @@ export const useTabStore = create<TabStore>((set, get) => ({
       return { groups: newGroups, activeGroupId: toGroupId };
     }),
 
-  splitGroup: (groupId, direction, newTab) =>
+  splitGroup: (groupId, direction, newTab, insertBefore) =>
     set((s) => {
       const newGroup = createGroup(newTab);
+      const originalLeaf: SplitNode = { type: "leaf", groupId };
+      const newLeaf: SplitNode = { type: "leaf", groupId: newGroup.id };
       const splitNode: SplitNode = {
         type: "split",
         direction,
         ratio: 0.5,
-        children: [
-          { type: "leaf", groupId },
-          { type: "leaf", groupId: newGroup.id },
-        ],
+        children: insertBefore
+          ? [newLeaf, originalLeaf]
+          : [originalLeaf, newLeaf],
       };
 
       const newLayout = findAndReplace(s.layout, groupId, splitNode) ?? s.layout;

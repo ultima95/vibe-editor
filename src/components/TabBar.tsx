@@ -1,23 +1,61 @@
+import { useState } from "react";
 import { Tab } from "../types";
+
+export const TAB_DRAG_TYPE = "application/vibe-tab";
 
 interface TabBarProps {
   tabs: Tab[];
   activeTabId: string;
+  groupId: string;
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
+  onDropTab: (tabId: string, fromGroupId: string) => void;
 }
 
-export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab }: TabBarProps) {
+export function TabBar({
+  tabs,
+  activeTabId,
+  groupId,
+  onSelectTab,
+  onCloseTab,
+  onDropTab,
+}: TabBarProps) {
+  const [dragOver, setDragOver] = useState(false);
+
   return (
     <div
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        try {
+          const data = JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE));
+          if (data.fromGroupId !== groupId) {
+            onDropTab(data.tabId, data.fromGroupId);
+          }
+        } catch {
+          /* ignore invalid drag data */
+        }
+      }}
       style={{
         display: "flex",
         alignItems: "center",
-        background: "var(--bg-secondary)",
-        borderBottom: "1px solid var(--border)",
+        background: dragOver
+          ? "rgba(100, 100, 255, 0.15)"
+          : "var(--bg-secondary)",
+        borderBottom: dragOver
+          ? "2px solid var(--accent)"
+          : "1px solid var(--border)",
         height: "var(--tab-height)",
         overflow: "hidden",
         flexShrink: 0,
+        transition: "background 0.15s, border-color 0.15s",
       }}
     >
       {tabs.map((tab) => {
@@ -26,6 +64,14 @@ export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab }: TabBarPro
         return (
           <div
             key={tab.id}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData(
+                TAB_DRAG_TYPE,
+                JSON.stringify({ tabId: tab.id, fromGroupId: groupId, tab }),
+              );
+              e.dataTransfer.effectAllowed = "move";
+            }}
             onClick={() => onSelectTab(tab.id)}
             style={{
               display: "flex",
@@ -33,11 +79,15 @@ export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab }: TabBarPro
               gap: 6,
               padding: "0 12px",
               height: "100%",
-              cursor: "pointer",
+              cursor: "grab",
               userSelect: "none",
               background: isActive ? "var(--bg-primary)" : "transparent",
-              color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-              borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+              color: isActive
+                ? "var(--text-primary)"
+                : "var(--text-secondary)",
+              borderBottom: isActive
+                ? "2px solid var(--accent)"
+                : "2px solid transparent",
               fontSize: 13,
               whiteSpace: "nowrap",
             }}
@@ -45,7 +95,9 @@ export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab }: TabBarPro
             <span>{icon}</span>
             <span>{tab.title}</span>
             {tab.isDirty && (
-              <span style={{ color: "var(--text-secondary)", fontSize: 16 }}>•</span>
+              <span style={{ color: "var(--text-secondary)", fontSize: 16 }}>
+                •
+              </span>
             )}
             <span
               onClick={(e) => {
@@ -59,8 +111,12 @@ export function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab }: TabBarPro
                 lineHeight: 1,
                 marginLeft: 2,
               }}
-              onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "1"; }}
-              onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "0.5"; }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.opacity = "0.5";
+              }}
             >
               ×
             </span>
