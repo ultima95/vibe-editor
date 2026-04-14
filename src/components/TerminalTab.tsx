@@ -78,6 +78,9 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
       if (dims) {
         resize(dims.cols, dims.rows);
       }
+    }).catch((err) => {
+      console.error("Failed to spawn PTY:", err);
+      terminal.write(`\r\n\x1b[31mFailed to spawn terminal: ${err}\x1b[0m\r\n`);
     });
 
     return () => { terminal.dispose(); };

@@ -3,7 +3,7 @@ use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::Arc;
-use uuid::Uuid;
+
 
 pub struct PtyInstance {
     master: Box<dyn MasterPty + Send>,
@@ -24,6 +24,7 @@ impl PtyManager {
 
     pub fn spawn_pty(
         &self,
+        id: String,
         cols: u16,
         rows: u16,
         cwd: Option<String>,
@@ -60,8 +61,6 @@ impl PtyManager {
             .master
             .take_writer()
             .map_err(|e| format!("Failed to get PTY writer: {}", e))?;
-
-        let id = Uuid::new_v4().to_string();
 
         let instance = PtyInstance {
             master: pair.master,

@@ -16,7 +16,9 @@ export function usePty({ cols, rows, cwd, onData, onExit }: UsePtyOptions) {
   const unlistenExitRef = useRef<UnlistenFn | null>(null);
 
   const spawn = useCallback(async () => {
-    const id = await invoke<string>("spawn_pty", { cols, rows, cwd });
+    // Generate ID client-side so we can set up listeners BEFORE spawning.
+    // This prevents the race where PTY output arrives before the listener exists.
+    const id = crypto.randomUUID();
     ptyIdRef.current = id;
 
     unlistenOutputRef.current = await listen<string>(
@@ -27,6 +29,8 @@ export function usePty({ cols, rows, cwd, onData, onExit }: UsePtyOptions) {
       `pty-exit-${id}`,
       () => onExit()
     );
+
+    await invoke("spawn_pty", { id, cols, rows, cwd });
 
     return id;
   }, [cols, rows, cwd, onData, onExit]);

@@ -17,14 +17,15 @@ struct AppState {
 fn spawn_pty(
     state: State<'_, Arc<AppState>>,
     app: AppHandle,
+    id: String,
     cols: u16,
     rows: u16,
     cwd: Option<String>,
-) -> Result<String, String> {
-    let id = state.pty_manager.spawn_pty(cols, rows, cwd, None)?;
+) -> Result<(), String> {
+    state.pty_manager.spawn_pty(id.clone(), cols, rows, cwd, None)?;
 
     let reader = state.pty_manager.take_reader(&id)?;
-    let pty_id = id.clone();
+    let pty_id = id;
     let app_handle = app.clone();
     std::thread::spawn(move || {
         let mut reader = reader;
@@ -42,7 +43,7 @@ fn spawn_pty(
         let _ = app_handle.emit(&format!("pty-exit-{}", pty_id), ());
     });
 
-    Ok(id)
+    Ok(())
 }
 
 #[tauri::command]
@@ -142,13 +143,21 @@ fn text_search(
 
 #[tauri::command]
 fn cmd_get_default_workspace() -> Result<String, String> {
-    std::env::current_dir()
+    if let Ok(cwd) = std::env::current_dir() {
+        // In Tauri dev mode, CWD is src-tauri/; use the project root instead
+        if cwd.ends_with("src-tauri") {
+            if let Some(parent) = cwd.parent() {
+                return Ok(parent.to_string_lossy().to_string());
+            }
+        }
+        // If CWD looks like a project directory, use it
+        if cwd.join("package.json").exists() || cwd.join("Cargo.toml").exists() {
+            return Ok(cwd.to_string_lossy().to_string());
+        }
+    }
+    dirs::home_dir()
         .map(|p| p.to_string_lossy().to_string())
-        .or_else(|_| {
-            dirs::home_dir()
-                .map(|p| p.to_string_lossy().to_string())
-                .ok_or_else(|| "Could not determine default workspace".to_string())
-        })
+        .ok_or_else(|| "Could not determine default workspace".to_string())
 }
 
 #[tauri::command]
