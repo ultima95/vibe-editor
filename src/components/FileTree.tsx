@@ -47,6 +47,12 @@ export function FileTree() {
     );
   }
 
+  const refreshRoot = () => {
+    if (workspaceRoot) {
+      listDirectory(workspaceRoot).then(setEntries).catch(console.error);
+    }
+  };
+
   return (
     <div style={{ overflow: "auto", height: "100%" }}>
       {entries.map((entry) => (
@@ -55,6 +61,7 @@ export function FileTree() {
           entry={entry}
           depth={0}
           onFileClick={handleFileClick}
+          onRefresh={refreshRoot}
         />
       ))}
     </div>
