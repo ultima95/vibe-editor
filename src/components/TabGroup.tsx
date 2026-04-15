@@ -2,6 +2,7 @@ import { useTabStore } from "../store/tab-store";
 import { TabBar } from "./TabBar";
 import { EditorTab } from "./EditorTab";
 import { TerminalTab } from "./TerminalTab";
+import { DiffTab } from "./DiffTab";
 
 interface TabGroupProps {
   groupId: string;
@@ -46,6 +47,16 @@ export function TabGroup({ groupId }: TabGroupProps) {
             return (
               <TerminalTab
                 key={tab.id}
+                isActive={isActive}
+              />
+            );
+          }
+          if (tab.type === "diff") {
+            return (
+              <DiffTab
+                key={tab.id}
+                filePath={tab.filePath ?? ""}
+                cached={tab.diffCached ?? false}
                 isActive={isActive}
               />
             );
