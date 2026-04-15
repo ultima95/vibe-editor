@@ -139,7 +139,7 @@ export function FuzzyFinder({ isOpen, onClose }: FuzzyFinderProps) {
                 cursor: "pointer",
                 background:
                   i === selectedIndex
-                    ? "rgba(124, 58, 237, 0.2)"
+                    ? "rgba(59, 130, 246, 0.15)"
                     : "transparent",
                 display: "flex",
                 flexDirection: "column",

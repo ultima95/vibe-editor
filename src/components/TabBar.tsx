@@ -47,7 +47,7 @@ export function TabBar({
         display: "flex",
         alignItems: "center",
         background: dragOver
-          ? "rgba(100, 100, 255, 0.15)"
+          ? "rgba(59, 130, 246, 0.1)"
           : "var(--bg-secondary)",
         borderBottom: dragOver
           ? "2px solid var(--accent)"

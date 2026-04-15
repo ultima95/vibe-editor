@@ -68,7 +68,7 @@ function FileRow({
         cursor: "pointer",
         fontSize: 12,
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(122,162,247,0.08)")}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(148,163,184,0.08)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       <span style={{ color, fontSize: 10, fontWeight: "bold", width: 14, flexShrink: 0, fontFamily: "monospace" }}>
@@ -190,13 +190,13 @@ export function GitPanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
       {git.mergeInProgress && (
-        <div style={{ padding: "6px 12px", background: "rgba(247,118,142,0.12)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "6px 12px", background: "rgba(239,68,68,0.1)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "var(--git-deleted)", fontSize: 11, flex: 1 }}>Merge in progress</span>
           <button onClick={git.mergeAbort} style={{ ...actionBtnStyle, color: "var(--git-deleted)" }}>Abort</button>
         </div>
       )}
       {git.rebaseInProgress && (
-        <div style={{ padding: "6px 12px", background: "rgba(247,118,142,0.12)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "6px 12px", background: "rgba(239,68,68,0.1)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "var(--git-deleted)", fontSize: 11, flex: 1 }}>Rebase in progress</span>
           <button onClick={git.rebaseContinue} disabled={disabled} style={{ ...actionBtnStyle, color: "var(--git-added)" }}>Continue</button>
           <button onClick={git.rebaseAbort} style={{ ...actionBtnStyle, color: "var(--git-deleted)" }}>Abort</button>
@@ -317,7 +317,7 @@ export function GitPanel() {
                       color: item.disabled ? "var(--text-muted)" : "var(--text-primary)",
                       fontSize: 12,
                     }}
-                    onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = "rgba(122,162,247,0.08)"; }}
+                    onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = "rgba(148,163,184,0.08)"; }}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     {item.label}
@@ -361,7 +361,7 @@ export function GitPanel() {
               <div
                 key={entry.index}
                 style={{ display: "flex", alignItems: "center", padding: "4px 8px", gap: 8, fontSize: 12 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(122,162,247,0.08)")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(148,163,184,0.08)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <span style={{ color: "var(--text-muted)", fontFamily: "monospace", fontSize: 11, flexShrink: 0 }}>

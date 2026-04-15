@@ -194,16 +194,15 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
           textOverflow: "ellipsis",
         }}
         onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "rgba(124, 58, 237, 0.1)")
+          ((e.currentTarget as HTMLElement).style.background = "rgba(148, 163, 184, 0.08)")
         }
         onMouseLeave={(e) =>
           ((e.currentTarget as HTMLElement).style.background = "transparent")
         }
       >
-        <span style={{ fontSize: 10, opacity: 0.5, fontFamily: "monospace" }}>
-          {entry.is_dir ? (expanded ? "▾" : "▸") : " "}
+        <span style={{ fontSize: 10, width: 14, textAlign: "center", color: "var(--text-muted)" }}>
+          {entry.is_dir ? (expanded ? "▾" : "›") : ""}
         </span>
-        <span style={{ fontSize: 11, opacity: 0.5 }}>{entry.is_dir ? "◆" : "◇"}</span>
         {renaming ? (
           <input
             ref={renameRef}

@@ -63,7 +63,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           }}
           onMouseEnter={(e) =>
             ((e.currentTarget as HTMLElement).style.background =
-              "rgba(124, 58, 237, 0.15)")
+              "rgba(148, 163, 184, 0.08)")
           }
           onMouseLeave={(e) =>
             ((e.currentTarget as HTMLElement).style.background = "transparent")

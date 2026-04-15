@@ -39,7 +39,7 @@ function EdgeDropZone({
         ...positionStyle,
         zIndex: 10,
         pointerEvents: active ? "auto" : "none",
-        background: hovering ? "rgba(100, 100, 255, 0.2)" : "transparent",
+        background: hovering ? "rgba(59, 130, 246, 0.15)" : "transparent",
         border: hovering ? "2px dashed var(--accent)" : "2px dashed transparent",
         transition: "background 0.15s, border-color 0.15s",
       }}

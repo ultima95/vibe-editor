@@ -82,7 +82,7 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
             alignItems: "center",
             gap: 6,
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(122,162,247,0.08)")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(148,163,184,0.08)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           {b.is_current && <span style={{ fontSize: 10 }}>●</span>}
