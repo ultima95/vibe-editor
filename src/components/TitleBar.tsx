@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "../store/app-store";
+import { Settings } from "lucide-react";
 
 const appWindow = getCurrentWindow();
 
-export function TitleBar() {
+export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot);
 
   const projectName = workspaceRoot
@@ -18,6 +19,7 @@ export function TitleBar() {
         height: 38,
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         background: "var(--bg-tertiary)",
         borderBottom: "1px solid var(--border)",
         userSelect: "none",
@@ -53,6 +55,27 @@ export function TitleBar() {
       >
         {projectName}
       </span>
+
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          title="Settings (⌘,)"
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            padding: "4px 14px 4px 4px",
+            display: "flex",
+            alignItems: "center",
+            transition: "color 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+        >
+          <Settings size={14} strokeWidth={1.75} />
+        </button>
+      )}
     </div>
   );
 }

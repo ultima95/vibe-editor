@@ -18,7 +18,7 @@ export function openProject(path: string) {
     .catch(console.error);
 }
 
-export function AppShell() {
+export function AppShell({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { position } = useSidebarStore();
   const workspaceRoot = useAppStore((s) => s.workspaceRoot);
   const prevRootRef = useRef<string | null>(null);
@@ -56,7 +56,7 @@ export function AppShell() {
         background: "var(--bg-primary)",
       }}
     >
-      <TitleBar />
+      <TitleBar onOpenSettings={onOpenSettings} />
       <div
         style={{
           display: "flex",
