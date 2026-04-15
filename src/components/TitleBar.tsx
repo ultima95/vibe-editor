@@ -20,8 +20,9 @@ export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
         borderBottom: "1px solid var(--border)",
         userSelect: "none",
         flexShrink: 0,
-        /* Leave space for native macOS traffic lights */
         paddingLeft: 78,
+        // @ts-expect-error -- WebKit vendor CSS for window dragging
+        WebkitAppRegion: "drag",
       }}
     >
       <span
@@ -55,6 +56,8 @@ export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
             display: "flex",
             alignItems: "center",
             transition: "color 0.15s",
+            // @ts-expect-error -- WebKit vendor CSS
+            WebkitAppRegion: "no-drag",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
