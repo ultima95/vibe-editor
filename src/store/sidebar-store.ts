@@ -4,11 +4,11 @@ interface SidebarStore {
   visible: boolean;
   position: "left" | "right";
   width: number;
-  activePanel: "files" | "search";
+  activePanel: "files" | "search" | "git";
   toggle: () => void;
   setPosition: (position: "left" | "right") => void;
   setWidth: (width: number) => void;
-  setActivePanel: (panel: "files" | "search") => void;
+  setActivePanel: (panel: "files" | "search" | "git") => void;
 }
 
 export const useSidebarStore = create<SidebarStore>((set) => ({

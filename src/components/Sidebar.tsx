@@ -2,6 +2,7 @@ import { useRef, useCallback } from "react";
 import { useSidebarStore } from "../store/sidebar-store";
 import { FileTree } from "./FileTree";
 import { SearchPanel } from "./SearchPanel";
+import { GitPanel } from "./GitPanel";
 
 export function Sidebar() {
   const { visible, position, width, setWidth, activePanel, setActivePanel } = useSidebarStore();
@@ -73,7 +74,7 @@ export function Sidebar() {
           userSelect: "none",
           borderBottom: "1px solid var(--border)",
         }}>
-          {(["files", "search"] as const).map((panel) => (
+          {(["files", "search", "git"] as const).map((panel) => (
             <button
               key={panel}
               onClick={() => setActivePanel(panel)}
@@ -90,12 +91,12 @@ export function Sidebar() {
                 cursor: "pointer",
               }}
             >
-              {panel === "files" ? "Files" : "Search"}
+              {panel === "files" ? "Files" : panel === "search" ? "Search" : "Git"}
             </button>
           ))}
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: "0 4px" }}>
-          {activePanel === "files" ? <FileTree /> : <SearchPanel />}
+          {activePanel === "files" ? <FileTree /> : activePanel === "search" ? <SearchPanel /> : <GitPanel />}
         </div>
       </div>
       {resizeHandle}
