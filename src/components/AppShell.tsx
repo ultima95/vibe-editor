@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useGitStore } from "../store/git-store";
 import { Sidebar } from "./Sidebar";
 import { TabGroupManager } from "./TabGroupManager";
+import { TitleBar } from "./TitleBar";
 import { useSidebarStore } from "../store/sidebar-store";
 import { useAppStore } from "../store/app-store";
 
@@ -49,15 +50,25 @@ export function AppShell() {
     <div
       style={{
         display: "flex",
-        flexDirection: position === "left" ? "row" : "row-reverse",
+        flexDirection: "column",
         width: "100%",
         height: "100vh",
         background: "var(--bg-primary)",
       }}
     >
-      <Sidebar />
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        <TabGroupManager />
+      <TitleBar />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: position === "left" ? "row" : "row-reverse",
+          flex: 1,
+          overflow: "hidden",
+        }}
+      >
+        <Sidebar />
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          <TabGroupManager />
+        </div>
       </div>
     </div>
   );
