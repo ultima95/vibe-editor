@@ -59,6 +59,13 @@ function App() {
         e.preventDefault();
         toggleSidebar();
       }
+      // Cmd+Shift+G: focus git panel
+      if (e.metaKey && e.shiftKey && e.key === "g") {
+        e.preventDefault();
+        const sidebar = useSidebarStore.getState();
+        if (!sidebar.visible) sidebar.toggle();
+        sidebar.setActivePanel("git");
+      }
       // Cmd+T: new terminal tab
       if (e.metaKey && e.key === "t") {
         e.preventDefault();

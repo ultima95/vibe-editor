@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useGitStore } from "../store/git-store";
 import { Sidebar } from "./Sidebar";
 import { TabGroupManager } from "./TabGroupManager";
 import { useSidebarStore } from "../store/sidebar-store";
@@ -24,8 +26,24 @@ export function AppShell() {
     if (workspaceRoot && workspaceRoot !== prevRootRef.current) {
       prevRootRef.current = workspaceRoot;
       openProject(workspaceRoot);
+      useGitStore.getState().refreshStatus();
     }
   }, [workspaceRoot]);
+
+  useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const unlisten = listen("fs-change", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        useGitStore.getState().refreshStatus();
+      }, 300);
+    });
+
+    return () => {
+      clearTimeout(debounceTimer);
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   return (
     <div
