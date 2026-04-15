@@ -7,7 +7,7 @@ pub mod search;
 use pty_manager::PtyManager;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle};
 
 struct AppState {
     pty_manager: PtyManager,
@@ -316,6 +316,11 @@ pub fn run() {
             pty_manager: PtyManager::new(),
             fs_watcher: Mutex::new(None),
         }))
+        .setup(|app| {
+            let window = app.get_webview_window("main").expect("main window");
+            window.set_title_bar_style(TitleBarStyle::Overlay)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             spawn_pty,
             write_pty,
