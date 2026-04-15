@@ -1,9 +1,5 @@
-import { useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "../store/app-store";
 import { Settings } from "lucide-react";
-
-const appWindow = getCurrentWindow();
 
 export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot);
@@ -24,20 +20,10 @@ export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
         borderBottom: "1px solid var(--border)",
         userSelect: "none",
         flexShrink: 0,
+        /* Leave space for native macOS traffic lights */
+        paddingLeft: 78,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 14 }}>
-        <TrafficLight color="#ff5f57" hoverColor="#e0443e" onClick={() => appWindow.close()} />
-        <TrafficLight color="#febc2e" hoverColor="#d4a019" onClick={() => appWindow.minimize()} />
-        <TrafficLight
-          color="#28c840"
-          hoverColor="#1aab29"
-          onClick={async () => {
-            await appWindow.toggleMaximize();
-          }}
-        />
-      </div>
-
       <span
         data-tauri-drag-region
         style={{
@@ -77,35 +63,5 @@ export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
         </button>
       )}
     </div>
-  );
-}
-
-function TrafficLight({
-  color,
-  hoverColor,
-  onClick,
-}: {
-  color: string;
-  hoverColor: string;
-  onClick: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: 12,
-        height: 12,
-        borderRadius: "50%",
-        background: hovered ? hoverColor : color,
-        border: "none",
-        padding: 0,
-        cursor: "pointer",
-        transition: "background 0.1s",
-      }}
-    />
   );
 }
