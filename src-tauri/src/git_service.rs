@@ -96,7 +96,8 @@ pub fn char_to_status(c: char) -> FileStatus {
 }
 
 pub fn parse_branch_from_status(raw: &str) -> Option<String> {
-    for line in raw.lines() {
+    // With -z, header lines are NUL-terminated instead of LF-terminated
+    for line in raw.split(|c| c == '\n' || c == '\0') {
         if let Some(rest) = line.strip_prefix("# branch.head ") {
             let branch = rest.trim();
             if branch == "(detached)" {
