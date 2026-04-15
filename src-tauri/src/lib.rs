@@ -1,5 +1,6 @@
 pub mod config;
 pub mod fs_service;
+pub mod git_service;
 pub mod pty_manager;
 pub mod search;
 
@@ -187,6 +188,125 @@ fn unwatch_directory(state: State<'_, Arc<AppState>>) -> Result<(), String> {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Git commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn git_status(workspace_root: String) -> Result<git_service::GitStatusResult, String> {
+    git_service::git_status_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_diff(workspace_root: String, path: String, cached: bool) -> Result<String, String> {
+    git_service::git_diff_impl(&workspace_root, &path, cached)
+}
+
+#[tauri::command]
+fn git_stage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
+    git_service::git_stage_impl(&workspace_root, paths)
+}
+
+#[tauri::command]
+fn git_unstage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
+    git_service::git_unstage_impl(&workspace_root, paths)
+}
+
+#[tauri::command]
+fn git_discard(workspace_root: String, path: String) -> Result<(), String> {
+    git_service::git_discard_impl(&workspace_root, &path)
+}
+
+#[tauri::command]
+fn git_commit(workspace_root: String, message: String) -> Result<(), String> {
+    git_service::git_commit_impl(&workspace_root, &message)
+}
+
+#[tauri::command]
+fn git_init(workspace_root: String) -> Result<(), String> {
+    git_service::git_init_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_log(workspace_root: String, skip: u32, limit: u32) -> Result<Vec<git_service::LogEntry>, String> {
+    git_service::git_log_impl(&workspace_root, skip, limit)
+}
+
+#[tauri::command]
+fn git_branches(workspace_root: String) -> Result<Vec<git_service::BranchInfo>, String> {
+    git_service::git_branches_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_checkout_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    git_service::git_checkout_branch_impl(&workspace_root, &branch)
+}
+
+#[tauri::command]
+fn git_create_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    git_service::git_create_branch_impl(&workspace_root, &branch)
+}
+
+#[tauri::command]
+fn git_delete_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    git_service::git_delete_branch_impl(&workspace_root, &branch)
+}
+
+#[tauri::command]
+fn git_merge(workspace_root: String, branch: String) -> Result<String, String> {
+    git_service::git_merge_impl(&workspace_root, &branch)
+}
+
+#[tauri::command]
+fn git_merge_abort(workspace_root: String) -> Result<(), String> {
+    git_service::git_merge_abort_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_rebase(workspace_root: String, branch: String) -> Result<String, String> {
+    git_service::git_rebase_impl(&workspace_root, &branch)
+}
+
+#[tauri::command]
+fn git_rebase_abort(workspace_root: String) -> Result<(), String> {
+    git_service::git_rebase_abort_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_rebase_continue(workspace_root: String) -> Result<(), String> {
+    git_service::git_rebase_continue_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_stash_push(workspace_root: String) -> Result<(), String> {
+    git_service::git_stash_push_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_stash_pop(workspace_root: String, index: Option<u32>) -> Result<(), String> {
+    git_service::git_stash_pop_impl(&workspace_root, index)
+}
+
+#[tauri::command]
+fn git_stash_drop(workspace_root: String, index: u32) -> Result<(), String> {
+    git_service::git_stash_drop_impl(&workspace_root, index)
+}
+
+#[tauri::command]
+fn git_stash_list(workspace_root: String) -> Result<Vec<git_service::StashEntry>, String> {
+    git_service::git_stash_list_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_push(workspace_root: String) -> Result<String, String> {
+    git_service::git_push_impl(&workspace_root)
+}
+
+#[tauri::command]
+fn git_pull(workspace_root: String) -> Result<String, String> {
+    git_service::git_pull_impl(&workspace_root)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -216,6 +336,29 @@ pub fn run() {
             cmd_get_recent_projects,
             cmd_add_recent_project,
             unwatch_directory,
+            git_status,
+            git_diff,
+            git_stage,
+            git_unstage,
+            git_discard,
+            git_commit,
+            git_init,
+            git_log,
+            git_branches,
+            git_checkout_branch,
+            git_create_branch,
+            git_delete_branch,
+            git_merge,
+            git_merge_abort,
+            git_rebase,
+            git_rebase_abort,
+            git_rebase_continue,
+            git_stash_push,
+            git_stash_pop,
+            git_stash_drop,
+            git_stash_list,
+            git_push,
+            git_pull,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
