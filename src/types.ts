@@ -1,10 +1,11 @@
 export interface Tab {
   id: string;
-  type: "terminal" | "editor";
+  type: "terminal" | "editor" | "diff" | "git-log";
   title: string;
   ptyId?: string;
   filePath?: string;
   isDirty?: boolean;
+  diffCached?: boolean;
 }
 
 export interface TabGroup {
