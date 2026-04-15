@@ -11,6 +11,11 @@
   --success: #22c55e;
   --warning: #e5c07b;
   --error: #ff5555;
+  --git-added: #a6e3a1;
+  --git-modified: #f9e2af;
+  --git-deleted: #f38ba8;
+  --git-untracked: #94e2d5;
+  --git-conflicted: #f38ba8;
   --tab-height: 36px;
   --sidebar-min-width: 180px;
   --sidebar-default-width: 240px;
