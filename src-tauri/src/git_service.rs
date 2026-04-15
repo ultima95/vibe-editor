@@ -341,7 +341,7 @@ pub fn git_branches_impl(cwd: &str) -> Result<Vec<BranchInfo>, String> {
             continue;
         }
         let is_current = line.starts_with('*');
-        let rest = if is_current { &line[2..] } else { &line[2..] };
+        let rest = if is_current { &line[2..] } else { line };
         let parts: Vec<&str> = rest.splitn(2, ' ').collect();
         let name = parts[0].to_string();
         let is_remote = name.starts_with("remotes/") || name.contains('/');
