@@ -60,7 +60,7 @@ export function TabBar({
     >
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
-        const icon = tab.type === "terminal" ? "⬛" : "📄";
+        const icon = tab.type === "terminal" ? "›_" : tab.type === "diff" ? "±" : tab.type === "git-log" ? "⊙" : "⬡";
         return (
           <div
             key={tab.id}
@@ -92,7 +92,7 @@ export function TabBar({
               whiteSpace: "nowrap",
             }}
           >
-            <span>{icon}</span>
+            <span style={{ fontSize: 11, opacity: 0.6 }}>{icon}</span>
             <span>{tab.title}</span>
             {tab.isDirty && (
               <span style={{ color: "var(--text-secondary)", fontSize: 16 }}>

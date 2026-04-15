@@ -200,10 +200,10 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
           ((e.currentTarget as HTMLElement).style.background = "transparent")
         }
       >
-        <span style={{ fontSize: 11, width: 14, textAlign: "center" }}>
-          {entry.is_dir ? (expanded ? "▼" : "▶") : " "}
+        <span style={{ fontSize: 10, opacity: 0.5, fontFamily: "monospace" }}>
+          {entry.is_dir ? (expanded ? "▾" : "▸") : " "}
         </span>
-        <span>{entry.is_dir ? "📁" : "📄"}</span>
+        <span style={{ fontSize: 11, opacity: 0.5 }}>{entry.is_dir ? "◆" : "◇"}</span>
         {renaming ? (
           <input
             ref={renameRef}

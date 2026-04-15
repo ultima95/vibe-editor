@@ -82,11 +82,11 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
             alignItems: "center",
             gap: 6,
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(124,58,237,0.1)")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(122,162,247,0.08)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
-          {b.is_current && <span>✓</span>}
-          {b.is_remote && <span style={{ fontSize: 10, opacity: 0.6 }}>⌘</span>}
+          {b.is_current && <span style={{ fontSize: 10 }}>●</span>}
+          {b.is_remote && <span style={{ fontSize: 9, opacity: 0.5 }}>☁</span>}
           <span>{b.name}</span>
         </div>
       ))}

@@ -56,7 +56,7 @@ export function DiffTab({ filePath, cached, isActive }: DiffTabProps) {
               key={i}
               style={{
                 display: "flex",
-                background: "rgba(137,180,250,0.08)",
+                background: "rgba(122,162,247,0.08)",
                 borderTop: "1px solid var(--border)",
                 borderBottom: "1px solid var(--border)",
                 margin: "4px 0",
@@ -69,9 +69,9 @@ export function DiffTab({ filePath, cached, isActive }: DiffTabProps) {
         }
 
         const bgColor = line.type === "added"
-          ? "rgba(166,227,161,0.12)"
+          ? "rgba(115,218,202,0.1)"
           : line.type === "removed"
-            ? "rgba(243,139,168,0.12)"
+            ? "rgba(247,118,142,0.1)"
             : "transparent";
 
         const textColor = line.type === "added"
