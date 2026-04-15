@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useFileSystem, DirEntry } from "../hooks/use-file-system";
 import { ContextMenu } from "./ContextMenu";
 import { useGitStore } from "../store/git-store";
@@ -108,9 +108,14 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
   ];
 
   const workspaceRoot = useAppStore((s) => s.workspaceRoot) ?? "";
-  const allFiles = useGitStore((s) => [
-    ...s.stagedFiles, ...s.changedFiles, ...s.untrackedFiles, ...s.conflictedFiles,
-  ]);
+  const stagedFiles = useGitStore((s) => s.stagedFiles);
+  const changedFiles = useGitStore((s) => s.changedFiles);
+  const untrackedFiles = useGitStore((s) => s.untrackedFiles);
+  const conflictedFiles = useGitStore((s) => s.conflictedFiles);
+  const allFiles = useMemo(
+    () => [...stagedFiles, ...changedFiles, ...untrackedFiles, ...conflictedFiles],
+    [stagedFiles, changedFiles, untrackedFiles, conflictedFiles],
+  );
 
   const relativePath = entry.path.startsWith(workspaceRoot)
     ? entry.path.slice(workspaceRoot.length + 1)
