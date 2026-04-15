@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useFileSystem, DirEntry } from "../hooks/use-file-system";
 import { ContextMenu } from "./ContextMenu";
+import { useGitStore } from "../store/git-store";
+import { useAppStore } from "../store/app-store";
 
 interface FileTreeNodeProps {
   entry: DirEntry;
@@ -105,6 +107,68 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
     { label: "Delete", onClick: handleDelete, danger: true },
   ];
 
+  const workspaceRoot = useAppStore((s) => s.workspaceRoot) ?? "";
+  const allFiles = useGitStore((s) => [
+    ...s.stagedFiles, ...s.changedFiles, ...s.untrackedFiles, ...s.conflictedFiles,
+  ]);
+
+  const relativePath = entry.path.startsWith(workspaceRoot)
+    ? entry.path.slice(workspaceRoot.length + 1)
+    : entry.path;
+
+  const gitFile = allFiles.find((f) => f.path === relativePath);
+  const gitStatus = gitFile
+    ? (gitFile.worktree_status !== "Unmodified" ? gitFile.worktree_status : gitFile.index_status)
+    : null;
+
+  const dirGitStatus = entry.is_dir ? (() => {
+    const priority: Record<string, number> = {
+      Conflicted: 5, Added: 4, Modified: 3, Deleted: 2, Untracked: 1,
+    };
+    let best: string | null = null;
+    let bestPriority = 0;
+    for (const f of allFiles) {
+      if (f.path.startsWith(relativePath + "/") || f.path.startsWith(relativePath + "\\")) {
+        const s = f.worktree_status !== "Unmodified" ? f.worktree_status : f.index_status;
+        const p = priority[s] ?? 0;
+        if (p > bestPriority) {
+          bestPriority = p;
+          best = s;
+        }
+      }
+    }
+    return best;
+  })() : null;
+
+  const effectiveStatus = gitStatus ?? dirGitStatus;
+  const statusOpacity = entry.is_dir && dirGitStatus && !gitStatus ? 0.7 : 1;
+
+  function gitStatusColor(status: string | null): string | undefined {
+    switch (status) {
+      case "Added": case "Renamed": case "Copied": return "var(--git-added)";
+      case "Modified": return "var(--git-modified)";
+      case "Deleted": return "var(--git-deleted)";
+      case "Untracked": return "var(--git-untracked)";
+      case "Conflicted": return "var(--git-conflicted)";
+      default: return undefined;
+    }
+  }
+
+  function gitStatusLetter(status: string | null): string {
+    switch (status) {
+      case "Added": return "A";
+      case "Modified": return "M";
+      case "Deleted": return "D";
+      case "Untracked": return "?";
+      case "Conflicted": return "C";
+      case "Renamed": return "R";
+      default: return "";
+    }
+  }
+
+  const nameColor = gitStatusColor(effectiveStatus) ?? "var(--text-primary)";
+  const isDeletedFile = effectiveStatus === "Deleted";
+
   return (
     <>
       <div
@@ -160,7 +224,31 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
             }}
           />
         ) : (
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{entry.name}</span>
+          <>
+            <span style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flex: 1,
+              color: nameColor,
+              textDecoration: isDeletedFile ? "line-through" : "none",
+            }}>
+              {entry.name}
+            </span>
+            {effectiveStatus && (
+              <span style={{
+                color: gitStatusColor(effectiveStatus),
+                fontSize: 9,
+                fontWeight: "bold",
+                fontFamily: "monospace",
+                marginLeft: "auto",
+                flexShrink: 0,
+                opacity: statusOpacity,
+                paddingRight: 4,
+              }}>
+                {gitStatusLetter(effectiveStatus)}
+              </span>
+            )}
+          </>
         )}
       </div>
       {contextMenu && (
