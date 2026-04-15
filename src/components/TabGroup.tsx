@@ -3,6 +3,7 @@ import { TabBar } from "./TabBar";
 import { EditorTab } from "./EditorTab";
 import { TerminalTab } from "./TerminalTab";
 import { DiffTab } from "./DiffTab";
+import { GitLogTab } from "./GitLogTab";
 
 interface TabGroupProps {
   groupId: string;
@@ -60,6 +61,9 @@ export function TabGroup({ groupId }: TabGroupProps) {
                 isActive={isActive}
               />
             );
+          }
+          if (tab.type === "git-log") {
+            return <GitLogTab key={tab.id} isActive={isActive} />;
           }
           return (
             <EditorTab
