@@ -3,6 +3,13 @@ import { useSidebarStore } from "../store/sidebar-store";
 import { FileTree } from "./FileTree";
 import { SearchPanel } from "./SearchPanel";
 import { GitPanel } from "./GitPanel";
+import { Files, Search, GitBranch } from "lucide-react";
+
+const panelIcons = {
+  files: Files,
+  search: Search,
+  git: GitBranch,
+} as const;
 
 export function Sidebar() {
   const { visible, position, width, setWidth, activePanel, setActivePanel } = useSidebarStore();
@@ -74,26 +81,38 @@ export function Sidebar() {
           userSelect: "none",
           borderBottom: "1px solid var(--border)",
         }}>
-          {(["files", "search", "git"] as const).map((panel) => (
-            <button
-              key={panel}
-              onClick={() => setActivePanel(panel)}
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                fontSize: 11,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                background: "none",
-                border: "none",
-                borderBottom: activePanel === panel ? "2px solid var(--accent)" : "2px solid transparent",
-                color: activePanel === panel ? "var(--text-primary)" : "var(--text-secondary)",
-                cursor: "pointer",
-              }}
-            >
-              {panel === "files" ? "Files" : panel === "search" ? "Search" : "Git"}
-            </button>
-          ))}
+          {(["files", "search", "git"] as const).map((panel) => {
+            const Icon = panelIcons[panel];
+            const isActive = activePanel === panel;
+            return (
+              <button
+                key={panel}
+                onClick={() => setActivePanel(panel)}
+                title={panel.charAt(0).toUpperCase() + panel.slice(1)}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "8px 0",
+                  background: "none",
+                  border: "none",
+                  borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+                  color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                  cursor: "pointer",
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "var(--text-secondary)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "var(--text-muted)";
+                }}
+              >
+                <Icon size={16} strokeWidth={1.75} />
+              </button>
+            );
+          })}
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: "0 4px" }}>
           {activePanel === "files" ? <FileTree /> : activePanel === "search" ? <SearchPanel /> : <GitPanel />}

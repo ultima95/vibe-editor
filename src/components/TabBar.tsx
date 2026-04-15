@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Tab } from "../types";
+import { Terminal, FileCode, GitCompare, GitCommitHorizontal } from "lucide-react";
 
 export const TAB_DRAG_TYPE = "application/vibe-tab";
 
@@ -60,7 +61,7 @@ export function TabBar({
     >
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
-        const icon = tab.type === "terminal" ? "›_" : tab.type === "diff" ? "±" : tab.type === "git-log" ? "⊙" : "⬡";
+        const IconComponent = tab.type === "terminal" ? Terminal : tab.type === "diff" ? GitCompare : tab.type === "git-log" ? GitCommitHorizontal : FileCode;
         return (
           <div
             key={tab.id}
@@ -92,7 +93,7 @@ export function TabBar({
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ fontSize: 11, opacity: 0.6 }}>{icon}</span>
+            <IconComponent size={13} strokeWidth={1.75} style={{ opacity: 0.6, flexShrink: 0 }} />
             <span>{tab.title}</span>
             {tab.isDirty && (
               <span style={{ color: "var(--text-secondary)", fontSize: 16 }}>

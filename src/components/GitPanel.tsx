@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGitStore, GitFileStatus } from "../store/git-store";
 import { useTabStore } from "../store/tab-store";
 import { BranchPicker } from "./BranchPicker";
+import { GitBranch, RotateCcw, Plus, Minus, MoreHorizontal } from "lucide-react";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -91,13 +92,13 @@ function FileRow({
       </span>
       <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
         {onDiscard && (
-          <button onClick={onDiscard} title="Discard changes" style={actionBtnStyle}>⟲</button>
+          <button onClick={onDiscard} title="Discard changes" style={actionBtnStyle}><RotateCcw size={12} strokeWidth={1.75} /></button>
         )}
         {onStage && (
-          <button onClick={onStage} title="Stage" style={actionBtnStyle}>+</button>
+          <button onClick={onStage} title="Stage" style={actionBtnStyle}><Plus size={13} strokeWidth={2} /></button>
         )}
         {onUnstage && (
-          <button onClick={onUnstage} title="Unstage" style={actionBtnStyle}>−</button>
+          <button onClick={onUnstage} title="Unstage" style={actionBtnStyle}><Minus size={13} strokeWidth={2} /></button>
         )}
       </div>
     </div>
@@ -208,7 +209,7 @@ export function GitPanel() {
         style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 6, position: "relative", cursor: "pointer" }}
         onMouseDown={(e) => { e.stopPropagation(); setShowBranchPicker(!showBranchPicker); }}
       >
-        <span style={{ color: "var(--accent)", fontSize: 11, fontFamily: "monospace" }}>⑂</span>
+        <GitBranch size={13} strokeWidth={1.75} style={{ color: "var(--accent)", flexShrink: 0 }} />
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {git.branch ?? "HEAD"}
         </span>
@@ -273,7 +274,7 @@ export function GitPanel() {
                 fontSize: 11,
               }}
             >
-              ⋯
+              <MoreHorizontal size={14} strokeWidth={1.75} />
             </button>
             {showOverflow && (
               <div

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store/app-store";
 import { BranchInfo } from "../store/git-store";
+import { Check, Cloud } from "lucide-react";
 
 interface BranchPickerProps {
   onSelect: (branch: string) => void;
@@ -85,8 +86,8 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
           onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(148,163,184,0.08)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
-          {b.is_current && <span style={{ fontSize: 10 }}>●</span>}
-          {b.is_remote && <span style={{ fontSize: 9, opacity: 0.5 }}>☁</span>}
+          {b.is_current && <Check size={12} strokeWidth={2} style={{ color: "var(--success)" }} />}
+          {b.is_remote && <Cloud size={12} strokeWidth={1.5} style={{ opacity: 0.5 }} />}
           <span>{b.name}</span>
         </div>
       ))}
