@@ -11,15 +11,12 @@ interface TabGroupProps {
 
 export function TabGroup({ groupId }: TabGroupProps) {
   const group = useTabStore((s) => s.groups[groupId]);
-  const activeGroupId = useTabStore((s) => s.activeGroupId);
   const setActiveTab = useTabStore((s) => s.setActiveTab);
   const removeTab = useTabStore((s) => s.removeTab);
   const setActiveGroupId = useTabStore((s) => s.setActiveGroupId);
   const moveTab = useTabStore((s) => s.moveTab);
 
   if (!group) return null;
-
-  const isActiveGroup = activeGroupId === groupId;
 
   return (
     <div
@@ -29,8 +26,6 @@ export function TabGroup({ groupId }: TabGroupProps) {
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        outline: isActiveGroup ? "1px solid var(--accent)" : "none",
-        outlineOffset: -1,
       }}
     >
       <TabBar
