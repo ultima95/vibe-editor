@@ -61,6 +61,10 @@ User clicks theme in Settings
         → CodeMirror updates syntax colors instantly
 ```
 
+## Implementation Note
+
+The existing `EditorView.theme()` in `EditorTab.tsx` sets `background: "var(--bg-primary)"`. The paired CodeMirror themes from `@uiw/codemirror-themes-all` set their own editor background. Remove the CSS-variable background override so the code theme's native background takes effect.
+
 ## Scope Boundaries
 
 **In scope:**
