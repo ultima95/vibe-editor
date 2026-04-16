@@ -9,6 +9,10 @@ export function WelcomeScreen({ onOpenFolder }: WelcomeScreenProps) {
 
   return (
     <div style={styles.container}>
+      <div
+        data-tauri-drag-region
+        style={styles.dragRegion}
+      />
       <div style={styles.content}>
         <h1 style={styles.title}>Vibe Editor</h1>
         <p style={styles.subtitle}>Terminal-first editor for macOS</p>
@@ -64,6 +68,16 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     height: "100vh",
     background: "var(--bg-primary)",
+    position: "relative" as const,
+  },
+  dragRegion: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 38,
+    // @ts-expect-error -- WebKit vendor CSS for window dragging
+    WebkitAppRegion: "drag",
   },
   content: {
     textAlign: "center",

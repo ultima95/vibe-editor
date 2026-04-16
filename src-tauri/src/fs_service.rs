@@ -43,7 +43,26 @@ pub fn watch_directory(
 }
 
 pub fn read_file(path: &str) -> Result<String, String> {
-    fs::read_to_string(path).map_err(|e| format!("Failed to read file '{}': {}", path, e))
+    let bytes = fs::read(path).map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
+
+    // Fast path: valid UTF-8
+    if let Ok(s) = String::from_utf8(bytes.clone()) {
+        return Ok(s);
+    }
+
+    // Check for BOM-indicated encoding
+    if let Some((encoding, _bom_len)) = encoding_rs::Encoding::for_bom(&bytes) {
+        let (cow, _, _) = encoding.decode(&bytes);
+        return Ok(cow.into_owned());
+    }
+
+    // Auto-detect encoding using chardetng (same detector Firefox uses)
+    let mut detector = chardetng::EncodingDetector::new(chardetng::Iso2022JpDetection::Deny);
+    detector.feed(&bytes, true);
+    let encoding = detector.guess(None, chardetng::Utf8Detection::Allow);
+
+    let (cow, _, _) = encoding.decode(&bytes);
+    Ok(cow.into_owned())
 }
 
 pub fn write_file(path: &str, content: &str) -> Result<(), String> {

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { javascript } from "@codemirror/lang-javascript";
 import { rust } from "@codemirror/lang-rust";
 import { python } from "@codemirror/lang-python";
@@ -11,6 +10,10 @@ import { css } from "@codemirror/lang-css";
 import { json } from "@codemirror/lang-json";
 import { useFileSystem } from "../hooks/use-file-system";
 import { useTabStore } from "../store/tab-store";
+import { useSettingsStore } from "../store/settings-store";
+import { getCodeTheme } from "../editor-themes";
+
+const themeCompartment = new Compartment();
 
 interface EditorTabProps {
   tabId: string;
@@ -49,61 +52,89 @@ export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps
   const viewRef = useRef<EditorView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
   const { readFile, writeFile } = useFileSystem();
 
+  // Phase 1: Read file content
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    let view: EditorView;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setFileContent(null);
 
     readFile(filePath)
       .then((content) => {
-        if (!containerRef.current) return;
-
-        const state = EditorState.create({
-          doc: content,
-          extensions: [
-            lineNumbers(),
-            history(),
-            keymap.of([...defaultKeymap, ...historyKeymap]),
-            getLanguageExtension(filePath),
-            oneDark,
-            EditorView.theme({
-              "&": { height: "100%", background: "var(--bg-primary)" },
-              ".cm-scroller": {
-                fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
-                fontSize: "14px",
-              },
-            }),
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                useTabStore.setState((state) => ({
-                  groups: {
-                    ...state.groups,
-                    [groupId]: {
-                      ...state.groups[groupId],
-                      tabs: state.groups[groupId].tabs.map((t) =>
-                        t.id === tabId ? { ...t, isDirty: true } : t
-                      ),
-                    },
-                  },
-                }));
-              }
-            }),
-          ],
-        });
-
-        view = new EditorView({ state, parent: containerRef.current });
-        viewRef.current = view;
-        setLoading(false);
+        if (!cancelled) setFileContent(content);
       })
       .catch((err) => {
-        setError(String(err));
-        setLoading(false);
+        if (!cancelled) {
+          setError(String(err));
+          setLoading(false);
+        }
       });
 
-    return () => { view?.destroy(); };
+    return () => { cancelled = true; };
   }, [filePath]);
+
+  // Phase 2: Mount CodeMirror once content and container are available
+  useEffect(() => {
+    if (fileContent === null || !containerRef.current) return;
+
+    const currentThemeId = useSettingsStore.getState().colorTheme;
+
+    const state = EditorState.create({
+      doc: fileContent,
+      extensions: [
+        lineNumbers(),
+        history(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+        getLanguageExtension(filePath),
+        themeCompartment.of(getCodeTheme(currentThemeId)),
+        EditorView.theme({
+          "&": { height: "100%" },
+          ".cm-scroller": {
+            fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
+            fontSize: "14px",
+          },
+        }),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            useTabStore.setState((s) => ({
+              groups: {
+                ...s.groups,
+                [groupId]: {
+                  ...s.groups[groupId],
+                  tabs: s.groups[groupId].tabs.map((t) =>
+                    t.id === tabId ? { ...t, isDirty: true } : t
+                  ),
+                },
+              },
+            }));
+          }
+        }),
+      ],
+    });
+
+    const view = new EditorView({ state, parent: containerRef.current });
+    viewRef.current = view;
+    setLoading(false);
+
+    return () => { view.destroy(); };
+  }, [fileContent, filePath, groupId, tabId]);
+
+  // Phase 3: Subscribe to theme changes for live hot-swap
+  useEffect(() => {
+    let prev = useSettingsStore.getState().colorTheme;
+    const unsub = useSettingsStore.subscribe((state) => {
+      if (state.colorTheme !== prev) {
+        prev = state.colorTheme;
+        viewRef.current?.dispatch({
+          effects: themeCompartment.reconfigure(getCodeTheme(state.colorTheme)),
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Cmd+S save handler
   useEffect(() => {
@@ -136,14 +167,6 @@ export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps
     return () => window.removeEventListener("keydown", handleSave);
   }, [filePath, isActive, groupId, tabId, writeFile]);
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)" }}>
-        Loading...
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--error)" }}>
@@ -153,13 +176,16 @@ export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps
   }
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        display: isActive ? "block" : "none",
-      }}
-    />
+    <div style={{ width: "100%", height: "100%", display: isActive ? "block" : "none", position: "relative" }}>
+      {loading && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", position: "absolute", inset: 0, zIndex: 1 }}>
+          Loading...
+        </div>
+      )}
+      <div
+        ref={containerRef}
+        style={{ width: "100%", height: "100%", visibility: loading ? "hidden" : "visible" }}
+      />
+    </div>
   );
 }
