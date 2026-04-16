@@ -8,6 +8,7 @@ use pty_manager::PtyManager;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle};
+use tauri::utils::config::WindowEffectsConfig;
 
 struct AppState {
     pty_manager: PtyManager,
@@ -188,6 +189,16 @@ fn unwatch_directory(state: State<'_, Arc<AppState>>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn set_vibrancy(app: AppHandle, _enabled: bool) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("main window not found")?;
+    // Clear vibrancy effects — the window is already configured with transparent: true,
+    // so semi-transparent CSS backgrounds produce real see-through transparency.
+    window
+        .set_effects(None::<WindowEffectsConfig>)
+        .map_err(|e| e.to_string())
+}
+
 // ---------------------------------------------------------------------------
 // Git commands
 // ---------------------------------------------------------------------------
@@ -341,6 +352,7 @@ pub fn run() {
             cmd_get_recent_projects,
             cmd_add_recent_project,
             unwatch_directory,
+            set_vibrancy,
             git_status,
             git_diff,
             git_stage,

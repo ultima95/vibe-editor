@@ -179,13 +179,24 @@ export interface SettingsState {
   save: () => Promise<void>;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return alpha >= 1 ? hex : `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function applyTheme(themeId: string) {
   const theme = themes.find((t) => t.id === themeId) ?? themes[0];
   const root = document.documentElement;
   const c = theme.colors;
-  root.style.setProperty("--bg-primary", c.bgPrimary);
-  root.style.setProperty("--bg-secondary", c.bgSecondary);
-  root.style.setProperty("--bg-tertiary", c.bgTertiary);
+  const opacity = useSettingsStore?.getState?.()?.appOpacity ?? 1;
+  root.style.setProperty("--bg-primary-raw", c.bgPrimary);
+  root.style.setProperty("--bg-secondary-raw", c.bgSecondary);
+  root.style.setProperty("--bg-tertiary-raw", c.bgTertiary);
+  root.style.setProperty("--bg-primary", hexToRgba(c.bgPrimary, opacity));
+  root.style.setProperty("--bg-secondary", hexToRgba(c.bgSecondary, opacity));
+  root.style.setProperty("--bg-tertiary", hexToRgba(c.bgTertiary, opacity));
   root.style.setProperty("--border", c.border);
   root.style.setProperty("--text-primary", c.textPrimary);
   root.style.setProperty("--text-secondary", c.textSecondary);
@@ -208,8 +219,16 @@ function applyBorderRadius(px: number) {
 }
 
 function applyOpacity(opacity: number) {
-  const root = document.getElementById("root");
-  if (root) root.style.opacity = `${opacity}`;
+  const root = document.documentElement;
+  const rootEl = document.getElementById("root");
+  if (rootEl) rootEl.style.opacity = "";
+  const primary = root.style.getPropertyValue("--bg-primary-raw").trim() || "#0f172a";
+  const secondary = root.style.getPropertyValue("--bg-secondary-raw").trim() || "#1e293b";
+  const tertiary = root.style.getPropertyValue("--bg-tertiary-raw").trim() || "#0b1120";
+  root.style.setProperty("--bg-primary", hexToRgba(primary, opacity));
+  root.style.setProperty("--bg-secondary", hexToRgba(secondary, opacity));
+  root.style.setProperty("--bg-tertiary", hexToRgba(tertiary, opacity));
+  invoke("set_vibrancy", { enabled: opacity < 1 }).catch(() => {});
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

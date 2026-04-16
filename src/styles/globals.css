@@ -65,3 +65,10 @@ html, body, #root {
   background: var(--accent);
   color: white;
 }
+
+/* Force xterm internal elements transparent so the app background shows through */
+.xterm-transparent .xterm-viewport,
+.xterm-transparent .xterm-viewport > div,
+.xterm-transparent .xterm-scrollable-element {
+  background-color: transparent !important;
+}

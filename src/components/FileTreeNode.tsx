@@ -3,7 +3,8 @@ import { useFileSystem, DirEntry } from "../hooks/use-file-system";
 import { ContextMenu } from "./ContextMenu";
 import { useGitStore } from "../store/git-store";
 import { useAppStore } from "../store/app-store";
-import { ChevronRight, ChevronDown, Folder, File } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
+import { FileIcon } from "./fileIcons";
 
 interface FileTreeNodeProps {
   entry: DirEntry;
@@ -207,11 +208,19 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
               ? <ChevronDown size={12} strokeWidth={1.5} style={{ color: "var(--text-muted)" }} />
               : <ChevronRight size={12} strokeWidth={1.5} style={{ color: "var(--text-muted)" }} />
             }
-            <Folder size={14} strokeWidth={1.5} style={{ color: nameColor !== "var(--text-primary)" ? nameColor : "var(--text-secondary)" }} />
+            {expanded
+              ? <FolderOpen size={14} strokeWidth={1.5} style={{ color: nameColor !== "var(--text-primary)" ? nameColor : "var(--text-secondary)" }} />
+              : <Folder size={14} strokeWidth={1.5} style={{ color: nameColor !== "var(--text-primary)" ? nameColor : "var(--text-secondary)" }} />
+            }
           </span>
         ) : (
           <span style={{ display: "flex", alignItems: "center", flexShrink: 0, width: 14 + 2 + 14, justifyContent: "flex-end" }}>
-            <File size={14} strokeWidth={1.5} style={{ color: nameColor !== "var(--text-primary)" ? nameColor : "var(--text-muted)" }} />
+            <FileIcon
+              filename={entry.name}
+              size={14}
+              strokeWidth={1.5}
+              colorOverride={nameColor !== "var(--text-primary)" ? nameColor : undefined}
+            />
           </span>
         )}
         {renaming ? (

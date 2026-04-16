@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { WebglAddon } from "@xterm/addon-webgl";
 import { usePty } from "../hooks/use-pty";
 import { useSettingsStore } from "../store/settings-store";
 import type { ITheme } from "@xterm/xterm";
@@ -165,8 +164,12 @@ const terminalPalettes: Record<string, TerminalPalette> = {
   },
 };
 
-function getTerminalTheme(uiThemeId: string): ITheme {
-  return terminalPalettes[uiThemeId] ?? terminalPalettes["one-dark"];
+function getTerminalTheme(uiThemeId: string, opacity = 1): ITheme {
+  const palette = terminalPalettes[uiThemeId] ?? terminalPalettes["one-dark"];
+  return {
+    ...palette,
+    background: opacity < 1 ? "transparent" : palette.background,
+  };
 }
 
 interface TerminalTabProps {
@@ -187,23 +190,20 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     let cancelled = false;
     let ptyCleanup: (() => Promise<void>) | null = null;
 
+    const { colorTheme, appOpacity } = useSettingsStore.getState();
+
     const terminal = new Terminal({
       fontSize: 14,
       fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
-      theme: getTerminalTheme(useSettingsStore.getState().colorTheme),
+      theme: getTerminalTheme(colorTheme, appOpacity),
       cursorBlink: true,
       allowProposedApi: true,
+      allowTransparency: true,
     });
 
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
-
-    try {
-      terminal.loadAddon(new WebglAddon());
-    } catch {
-      // WebGL not available, fall back to canvas renderer
-    }
 
     fitAddon.fit();
     terminal.onData((data) => write(data));
@@ -269,31 +269,43 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     }
   }, [isActive]);
 
-  // Subscribe to theme changes for live update
+  // Subscribe to theme and opacity changes for live update
   useEffect(() => {
-    let prev = useSettingsStore.getState().colorTheme;
+    let prevTheme = useSettingsStore.getState().colorTheme;
+    let prevOpacity = useSettingsStore.getState().appOpacity;
     const unsub = useSettingsStore.subscribe((state) => {
-      if (state.colorTheme !== prev) {
-        prev = state.colorTheme;
+      const themeChanged = state.colorTheme !== prevTheme;
+      const opacityChanged = state.appOpacity !== prevOpacity;
+      if (themeChanged || opacityChanged) {
+        prevTheme = state.colorTheme;
+        prevOpacity = state.appOpacity;
         if (terminalRef.current) {
-          terminalRef.current.options.theme = getTerminalTheme(state.colorTheme);
+          terminalRef.current.options.theme = getTerminalTheme(state.colorTheme, state.appOpacity);
         }
         if (containerRef.current) {
-          containerRef.current.style.backgroundColor = getTerminalTheme(state.colorTheme).background!;
+          containerRef.current.classList.toggle("xterm-transparent", state.appOpacity < 1);
+          containerRef.current.style.backgroundColor =
+            state.appOpacity < 1 ? "transparent" : getTerminalTheme(state.colorTheme).background!;
         }
       }
     });
     return () => unsub();
   }, []);
 
+  const initOpacity = useSettingsStore.getState().appOpacity;
+  const initTransparent = initOpacity < 1;
+
   return (
     <div
       ref={containerRef}
+      className={initTransparent ? "xterm-transparent" : undefined}
       style={{
         width: "100%",
         height: "100%",
         display: isActive ? "block" : "none",
-        backgroundColor: getTerminalTheme(useSettingsStore.getState().colorTheme).background,
+        backgroundColor: initTransparent
+          ? "transparent"
+          : getTerminalTheme(useSettingsStore.getState().colorTheme).background,
       }}
     />
   );
