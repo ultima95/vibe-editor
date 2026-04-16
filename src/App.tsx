@@ -90,8 +90,14 @@ function App() {
       // Cmd+T: new terminal tab
       if (e.metaKey && e.key === "t") {
         e.preventDefault();
-        const { addTab, activeGroupId } = useTabStore.getState();
-        addTab(activeGroupId, createTerminalTab(useAppStore.getState().workspaceRoot ?? undefined));
+        const store = useTabStore.getState();
+        const cwd = useAppStore.getState().workspaceRoot ?? undefined;
+        const tab = createTerminalTab(cwd);
+        if (store.activeGroupId && store.groups[store.activeGroupId]) {
+          store.addTab(store.activeGroupId, tab);
+        } else {
+          store.createGroup(tab);
+        }
       }
       // Cmd+W: close current tab
       if (e.metaKey && e.key === "w") {

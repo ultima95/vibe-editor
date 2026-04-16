@@ -74,6 +74,7 @@ interface TabStore {
 
   splitGroup: (groupId: string, direction: SplitDirection, newTab: Tab, insertBefore?: boolean) => void;
   removeGroup: (groupId: string) => void;
+  createGroup: (tab: Tab) => void;
 
   getActiveGroup: () => TabGroup | undefined;
   setActiveGroupId: (id: string) => void;
@@ -232,6 +233,16 @@ export const useTabStore = create<TabStore>((set, get) => ({
         groups: newGroups,
         layout: newLayout,
         activeGroupId: newActiveGroupId,
+      };
+    }),
+
+  createGroup: (tab) =>
+    set(() => {
+      const newGroup = createGroup(tab);
+      return {
+        groups: { [newGroup.id]: newGroup },
+        layout: { type: "leaf", groupId: newGroup.id },
+        activeGroupId: newGroup.id,
       };
     }),
 
