@@ -25,6 +25,25 @@ function App() {
     }
   }, []);
 
+  // When workspace opens, replace any cwd-less terminal tabs with ones rooted in the workspace
+  useEffect(() => {
+    if (!workspaceRoot) return;
+    const { groups } = useTabStore.getState();
+    for (const [groupId, group] of Object.entries(groups)) {
+      const updatedTabs = group.tabs.map((tab) =>
+        tab.type === "terminal" && !tab.cwd ? { ...tab, cwd: workspaceRoot } : tab
+      );
+      if (updatedTabs !== group.tabs) {
+        useTabStore.setState((s) => ({
+          groups: {
+            ...s.groups,
+            [groupId]: { ...s.groups[groupId], tabs: updatedTabs },
+          },
+        }));
+      }
+    }
+  }, [workspaceRoot]);
+
   useEffect(() => {
     useSettingsStore.getState().loadFromConfig();
     invoke<string[]>("cmd_get_recent_projects")
