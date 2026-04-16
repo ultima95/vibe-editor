@@ -28,8 +28,8 @@ export interface ColorTheme {
 
 export const themes: ColorTheme[] = [
   {
-    id: "midnight",
-    name: "Midnight",
+    id: "one-dark",
+    name: "One Dark",
     colors: {
       bgPrimary: "#0f172a",
       bgSecondary: "#1e293b",
@@ -97,8 +97,8 @@ export const themes: ColorTheme[] = [
     },
   },
   {
-    id: "rose-pine",
-    name: "Rosé Pine",
+    id: "dracula",
+    name: "Dracula",
     colors: {
       bgPrimary: "#191724",
       bgSecondary: "#1f1d2e",
@@ -120,8 +120,8 @@ export const themes: ColorTheme[] = [
     },
   },
   {
-    id: "emerald",
-    name: "Emerald",
+    id: "monokai",
+    name: "Monokai",
     colors: {
       bgPrimary: "#0a1a14",
       bgSecondary: "#122a20",
@@ -143,8 +143,8 @@ export const themes: ColorTheme[] = [
     },
   },
   {
-    id: "light",
-    name: "Light",
+    id: "github-light",
+    name: "GitHub Light",
     colors: {
       bgPrimary: "#ffffff",
       bgSecondary: "#f8fafc",
@@ -215,7 +215,7 @@ function applyOpacity(opacity: number) {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   borderRadius: 10,
   appOpacity: 1.0,
-  colorTheme: "midnight",
+  colorTheme: "one-dark",
 
   setBorderRadius: (v) => {
     set({ borderRadius: v });

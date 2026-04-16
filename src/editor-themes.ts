@@ -6,12 +6,12 @@ import { dracula } from "@uiw/codemirror-theme-dracula";
 import { monokai } from "@uiw/codemirror-theme-monokai";
 
 const codeThemeMap: Record<string, Extension> = {
-  midnight: oneDark,
+  "one-dark": oneDark,
   abyss: abyss,
   "github-dark": githubDark,
-  "rose-pine": dracula,
-  emerald: monokai,
-  light: githubLight,
+  dracula: dracula,
+  monokai: monokai,
+  "github-light": githubLight,
 };
 
 export function getCodeTheme(uiThemeId: string): Extension {
