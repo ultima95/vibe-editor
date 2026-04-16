@@ -12,6 +12,7 @@ import { useFileSystem } from "../hooks/use-file-system";
 import { useTabStore } from "../store/tab-store";
 import { useSettingsStore } from "../store/settings-store";
 import { getCodeTheme } from "../editor-themes";
+import { MarkdownPreview } from "./MarkdownPreview";
 
 const themeCompartment = new Compartment();
 
@@ -20,6 +21,7 @@ interface EditorTabProps {
   groupId: string;
   filePath: string;
   isActive: boolean;
+  previewMode?: boolean;
 }
 
 function getLanguageExtension(filePath: string) {
@@ -47,7 +49,12 @@ function getLanguageExtension(filePath: string) {
   }
 }
 
-export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps) {
+function isMarkdownFile(filePath: string): boolean {
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  return ext === "md" || ext === "markdown";
+}
+
+export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: EditorTabProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,6 +174,9 @@ export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps
     return () => window.removeEventListener("keydown", handleSave);
   }, [filePath, isActive, groupId, tabId, writeFile]);
 
+  const showPreview = previewMode && isMarkdownFile(filePath);
+  const togglePreviewMode = useTabStore((s) => s.togglePreviewMode);
+
   if (error) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--error)" }}>
@@ -177,15 +187,25 @@ export function EditorTab({ tabId, groupId, filePath, isActive }: EditorTabProps
 
   return (
     <div style={{ width: "100%", height: "100%", display: isActive ? "block" : "none", position: "relative" }}>
-      {loading && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", position: "absolute", inset: 0, zIndex: 1 }}>
-          Loading...
-        </div>
+      {showPreview ? (
+        <MarkdownPreview
+          filePath={filePath}
+          isActive={true}
+          onSwitchToSource={() => togglePreviewMode(groupId, tabId)}
+        />
+      ) : (
+        <>
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", position: "absolute", inset: 0, zIndex: 1 }}>
+              Loading...
+            </div>
+          )}
+          <div
+            ref={containerRef}
+            style={{ width: "100%", height: "100%", visibility: loading ? "hidden" : "visible" }}
+          />
+        </>
       )}
-      <div
-        ref={containerRef}
-        style={{ width: "100%", height: "100%", visibility: loading ? "hidden" : "visible" }}
-      />
     </div>
   );
 }

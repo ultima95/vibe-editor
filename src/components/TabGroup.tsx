@@ -68,6 +68,7 @@ export function TabGroup({ groupId }: TabGroupProps) {
               groupId={groupId}
               filePath={tab.filePath ?? ""}
               isActive={isActive}
+              previewMode={tab.previewMode}
             />
           );
         })}
