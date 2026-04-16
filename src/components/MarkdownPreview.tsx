@@ -141,6 +141,7 @@ export function MarkdownPreview({ filePath, isActive, onSwitchToSource }: Markdo
             ADD_TAGS: ["svg", "path", "circle", "rect", "line", "polyline", "polygon", "text", "g", "defs", "marker", "foreignObject", "style"],
             ADD_ATTR: ["viewBox", "d", "fill", "stroke", "stroke-width", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "width", "height", "points", "transform", "text-anchor", "dominant-baseline", "font-size", "marker-end", "refX", "refY", "orient", "markerWidth", "markerHeight", "class", "id", "style"],
           });
+          if (cancelled || !pre.parentNode) return;
           pre.replaceWith(wrapper);
         } catch {
           const errDiv = document.createElement("div");
@@ -150,7 +151,7 @@ export function MarkdownPreview({ filePath, isActive, onSwitchToSource }: Markdo
           codeBlock.textContent = code;
           const wrapper = document.createElement("div");
           wrapper.append(errDiv, codeBlock);
-          pre.replaceWith(wrapper);
+          if (!cancelled && pre.parentNode) pre.replaceWith(wrapper);
         }
       }
     })();

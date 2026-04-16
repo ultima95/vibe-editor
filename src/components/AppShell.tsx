@@ -7,6 +7,7 @@ import { TabGroupManager } from "./TabGroupManager";
 import { TitleBar } from "./TitleBar";
 import { useSidebarStore } from "../store/sidebar-store";
 import { useAppStore } from "../store/app-store";
+import { useTabStore, duplicateTab } from "../store/tab-store";
 
 export function openProject(path: string) {
   const { setWorkspaceRoot, setRecentProjects } = useAppStore.getState();
@@ -44,6 +45,42 @@ export function AppShell({ onOpenSettings }: { onOpenSettings?: () => void }) {
       clearTimeout(debounceTimer);
       unlisten.then((fn) => fn());
     };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const store = useTabStore.getState();
+      const group = store.groups[store.activeGroupId];
+      if (!group) return;
+      const activeTab = group.tabs.find((t) => t.id === group.activeTabId);
+      if (!activeTab) return;
+
+      // ⌘\ — split right
+      if (e.metaKey && !e.shiftKey && e.key === "\\") {
+        e.preventDefault();
+        store.splitGroup(store.activeGroupId, "vertical", duplicateTab(activeTab));
+        return;
+      }
+
+      // ⌘⇧\ — split down
+      if (e.metaKey && e.shiftKey && e.key === "\\") {
+        e.preventDefault();
+        store.splitGroup(store.activeGroupId, "horizontal", duplicateTab(activeTab));
+        return;
+      }
+
+      // ⌘⇧V — toggle markdown preview
+      if (e.metaKey && e.shiftKey && e.key === "v") {
+        if (activeTab.type === "editor" && /\.(md|markdown)$/i.test(activeTab.filePath ?? "")) {
+          e.preventDefault();
+          store.togglePreviewMode(store.activeGroupId, activeTab.id);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
