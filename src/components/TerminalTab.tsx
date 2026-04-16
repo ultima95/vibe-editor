@@ -3,7 +3,36 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { usePty } from "../hooks/use-pty";
+import { useSettingsStore, themes } from "../store/settings-store";
+import type { ITheme } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+
+function getTerminalTheme(uiThemeId: string): ITheme {
+  const theme = themes.find((t) => t.id === uiThemeId) ?? themes[0];
+  const c = theme.colors;
+  return {
+    background: c.bgPrimary,
+    foreground: c.textPrimary,
+    cursor: c.accent,
+    selectionBackground: c.accent + "44",
+    black: c.bgPrimary,
+    red: c.error,
+    green: c.success,
+    yellow: c.warning,
+    blue: c.accent,
+    magenta: c.gitConflicted,
+    cyan: c.gitAdded,
+    white: c.textPrimary,
+    brightBlack: c.textMuted,
+    brightRed: c.gitDeleted,
+    brightGreen: c.gitAdded,
+    brightYellow: c.gitModified,
+    brightBlue: c.accentHover,
+    brightMagenta: c.gitConflicted,
+    brightCyan: c.success,
+    brightWhite: c.textPrimary,
+  };
+}
 
 interface TerminalTabProps {
   cwd?: string;
@@ -26,20 +55,7 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     const terminal = new Terminal({
       fontSize: 14,
       fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
-      theme: {
-        background: "#0f172a",
-        foreground: "#e0e0e0",
-        cursor: "#3b82f6",
-        selectionBackground: "#3b82f644",
-        black: "#0f172a",
-        red: "#ff5555",
-        green: "#22c55e",
-        yellow: "#e5c07b",
-        blue: "#61afef",
-        magenta: "#c678dd",
-        cyan: "#56b6c2",
-        white: "#e0e0e0",
-      },
+      theme: getTerminalTheme(useSettingsStore.getState().colorTheme),
       cursorBlink: true,
       allowProposedApi: true,
     });
@@ -117,6 +133,20 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
       terminalRef.current?.focus();
     }
   }, [isActive]);
+
+  // Subscribe to theme changes for live update
+  useEffect(() => {
+    let prev = useSettingsStore.getState().colorTheme;
+    const unsub = useSettingsStore.subscribe((state) => {
+      if (state.colorTheme !== prev) {
+        prev = state.colorTheme;
+        if (terminalRef.current) {
+          terminalRef.current.options.theme = getTerminalTheme(state.colorTheme);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <div
