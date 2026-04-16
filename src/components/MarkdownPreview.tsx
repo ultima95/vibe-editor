@@ -59,10 +59,12 @@ export function MarkdownPreview({ filePath, isActive, onSwitchToSource }: Markdo
   const readFileRef = useRef(readFile);
   readFileRef.current = readFile;
 
-  // Re-render when file changes on disk
+  // Re-render when this file changes on disk
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout>;
-    const unlisten = listen("fs-change", () => {
+    const unlisten = listen<{ paths: string[] }>("fs-change", (event) => {
+      const changed = event.payload.paths ?? [];
+      if (!changed.some((p) => p.endsWith(filePath) || filePath.endsWith(p))) return;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => setRefreshKey((k) => k + 1), 300);
     });
@@ -70,7 +72,7 @@ export function MarkdownPreview({ filePath, isActive, onSwitchToSource }: Markdo
       clearTimeout(debounceTimer);
       unlisten.then((fn) => fn());
     };
-  }, []);
+  }, [filePath]);
 
   // Read and parse markdown
   useEffect(() => {
