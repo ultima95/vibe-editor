@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useSettingsStore, themes } from "../store/settings-store";
 import { useSidebarStore } from "../store/sidebar-store";
 import { X, PanelLeft, PanelRight, Check } from "lucide-react";
@@ -22,7 +23,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -153,7 +154,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.getElementById("modal-root")!
   );
 }
 
