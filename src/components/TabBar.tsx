@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tab } from "../types";
-import { Terminal, FileCode, GitCompare, GitCommitHorizontal } from "lucide-react";
+import { Terminal, FileCode, GitCompare, GitCommitHorizontal, BookOpen, Code, PanelRight } from "lucide-react";
 
 export const TAB_DRAG_TYPE = "application/vibe-tab";
 
@@ -11,6 +11,11 @@ interface TabBarProps {
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onDropTab: (tabId: string, fromGroupId: string) => void;
+  onTogglePreview?: () => void;
+  onSplitRight?: () => void;
+  onSplitDown?: () => void;
+  showPreviewToggle?: boolean;
+  isPreviewActive?: boolean;
 }
 
 export function TabBar({
@@ -20,6 +25,11 @@ export function TabBar({
   onSelectTab,
   onCloseTab,
   onDropTab,
+  onTogglePreview,
+  onSplitRight,
+  onSplitDown,
+  showPreviewToggle,
+  isPreviewActive,
 }: TabBarProps) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -124,6 +134,53 @@ export function TabBar({
           </div>
         );
       })}
+      <div style={{ flex: 1 }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 2, paddingRight: 8 }}>
+        {showPreviewToggle && (
+          <button
+            onClick={onTogglePreview}
+            title={isPreviewActive ? "Show source (⌘⇧V)" : "Show preview (⌘⇧V)"}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "2px 8px",
+              borderRadius: 4,
+              border: "none",
+              background: isPreviewActive ? "rgba(59, 130, 246, 0.15)" : "transparent",
+              color: isPreviewActive ? "var(--accent)" : "var(--text-secondary)",
+              cursor: "pointer",
+              fontSize: 11,
+              fontFamily: "inherit",
+            }}
+          >
+            {isPreviewActive
+              ? <><Code size={13} strokeWidth={1.75} /> Source</>
+              : <><BookOpen size={13} strokeWidth={1.75} /> Preview</>
+            }
+          </button>
+        )}
+        <button
+          onClick={onSplitRight}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onSplitDown?.();
+          }}
+          title="Split editor right (⌘\) · Right-click: split down"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "2px 6px",
+            borderRadius: 4,
+            border: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+          }}
+        >
+          <PanelRight size={14} strokeWidth={1.5} />
+        </button>
+      </div>
     </div>
   );
 }

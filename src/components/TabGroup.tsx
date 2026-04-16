@@ -1,4 +1,4 @@
-import { useTabStore } from "../store/tab-store";
+import { useTabStore, duplicateTab } from "../store/tab-store";
 import { TabBar } from "./TabBar";
 import { EditorTab } from "./EditorTab";
 import { TerminalTab } from "./TerminalTab";
@@ -15,8 +15,13 @@ export function TabGroup({ groupId }: TabGroupProps) {
   const removeTab = useTabStore((s) => s.removeTab);
   const setActiveGroupId = useTabStore((s) => s.setActiveGroupId);
   const moveTab = useTabStore((s) => s.moveTab);
+  const togglePreviewMode = useTabStore((s) => s.togglePreviewMode);
+  const splitGroup = useTabStore((s) => s.splitGroup);
 
   if (!group) return null;
+
+  const activeTab = group.tabs.find((t) => t.id === group.activeTabId);
+  const isMarkdown = activeTab?.type === "editor" && /\.(md|markdown)$/i.test(activeTab.filePath ?? "");
 
   return (
     <div
@@ -35,6 +40,17 @@ export function TabGroup({ groupId }: TabGroupProps) {
         onSelectTab={(tabId) => setActiveTab(groupId, tabId)}
         onCloseTab={(tabId) => removeTab(groupId, tabId)}
         onDropTab={(tabId, fromGroupId) => moveTab(fromGroupId, groupId, tabId)}
+        showPreviewToggle={isMarkdown}
+        isPreviewActive={activeTab?.previewMode ?? false}
+        onTogglePreview={() => {
+          if (activeTab) togglePreviewMode(groupId, activeTab.id);
+        }}
+        onSplitRight={() => {
+          if (activeTab) splitGroup(groupId, "vertical", duplicateTab(activeTab));
+        }}
+        onSplitDown={() => {
+          if (activeTab) splitGroup(groupId, "horizontal", duplicateTab(activeTab));
+        }}
       />
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         {group.tabs.map((tab) => {
