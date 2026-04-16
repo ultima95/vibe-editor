@@ -43,6 +43,7 @@ export function TabGroup({ groupId }: TabGroupProps) {
             return (
               <TerminalTab
                 key={tab.id}
+                cwd={tab.cwd}
                 isActive={isActive}
               />
             );

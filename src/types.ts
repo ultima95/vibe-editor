@@ -6,6 +6,7 @@ export interface Tab {
   filePath?: string;
   isDirty?: boolean;
   diffCached?: boolean;
+  cwd?: string;
 }
 
 export interface TabGroup {

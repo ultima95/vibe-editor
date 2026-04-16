@@ -3,9 +3,9 @@ import { Tab, TabGroup, SplitNode, SplitDirection } from "../types";
 
 let nextGroupNum = 1;
 
-export function createTerminalTab(): Tab {
+export function createTerminalTab(cwd?: string): Tab {
   const id = `terminal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  return { id, type: "terminal", title: "Terminal" };
+  return { id, type: "terminal", title: "Terminal", cwd };
 }
 
 function createGroup(tab: Tab): TabGroup {

@@ -72,7 +72,7 @@ function App() {
       if (e.metaKey && e.key === "t") {
         e.preventDefault();
         const { addTab, activeGroupId } = useTabStore.getState();
-        addTab(activeGroupId, createTerminalTab());
+        addTab(activeGroupId, createTerminalTab(useAppStore.getState().workspaceRoot ?? undefined));
       }
       // Cmd+W: close current tab
       if (e.metaKey && e.key === "w") {
@@ -88,7 +88,7 @@ function App() {
         splitGroup(
           activeGroupId,
           e.shiftKey ? "horizontal" : "vertical",
-          createTerminalTab()
+          createTerminalTab(useAppStore.getState().workspaceRoot ?? undefined)
         );
       }
       // Cmd+1-9: focus tab group by index
