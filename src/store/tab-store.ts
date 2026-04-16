@@ -8,6 +8,14 @@ export function createTerminalTab(cwd?: string): Tab {
   return { id, type: "terminal", title: "Terminal", cwd };
 }
 
+export function duplicateTab(tab: Tab): Tab {
+  const id = `${tab.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  if (tab.type === "terminal") {
+    return { id, type: "terminal", title: "Terminal", cwd: tab.cwd };
+  }
+  return { ...tab, id, isDirty: false, previewMode: false };
+}
+
 function createGroup(tab: Tab): TabGroup {
   return {
     id: `group-${nextGroupNum++}`,
@@ -62,6 +70,33 @@ function collectGroupIds(node: SplitNode): string[] {
   return node.children.flatMap(collectGroupIds);
 }
 
+function updateNodeRatio(
+  node: SplitNode,
+  targetNodeId: string,
+  ratio: number,
+): SplitNode | null {
+  if (node.type === "leaf") return null;
+
+  // Direct match on this node's id
+  if (node.id === targetNodeId) {
+    return { ...node, ratio };
+  }
+
+  // Recurse into children
+  if (!node.children) return null;
+  for (let i = 0; i < node.children.length; i++) {
+    const result = updateNodeRatio(node.children[i], targetNodeId, ratio);
+    if (result) {
+      const newChildren = [...node.children];
+      newChildren[i] = result;
+      return { ...node, children: newChildren };
+    }
+  }
+  return null;
+}
+
+let nextSplitNodeId = 1;
+
 interface TabStore {
   groups: Record<string, TabGroup>;
   layout: SplitNode;
@@ -78,6 +113,8 @@ interface TabStore {
 
   getActiveGroup: () => TabGroup | undefined;
   setActiveGroupId: (id: string) => void;
+  togglePreviewMode: (groupId: string, tabId: string) => void;
+  setSplitRatio: (nodeId: string, ratio: number) => void;
 }
 
 const initialTab = createTerminalTab();
@@ -198,6 +235,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
       const originalLeaf: SplitNode = { type: "leaf", groupId };
       const newLeaf: SplitNode = { type: "leaf", groupId: newGroup.id };
       const splitNode: SplitNode = {
+        id: `split-${nextSplitNodeId++}`,
         type: "split",
         direction,
         ratio: 0.5,
@@ -252,4 +290,27 @@ export const useTabStore = create<TabStore>((set, get) => ({
   },
 
   setActiveGroupId: (id) => set({ activeGroupId: id }),
+
+  togglePreviewMode: (groupId, tabId) =>
+    set((s) => {
+      const group = s.groups[groupId];
+      if (!group) return s;
+      return {
+        groups: {
+          ...s.groups,
+          [groupId]: {
+            ...group,
+            tabs: group.tabs.map((t) =>
+              t.id === tabId ? { ...t, previewMode: !t.previewMode } : t
+            ),
+          },
+        },
+      };
+    }),
+
+  setSplitRatio: (nodeId, ratio) =>
+    set((s) => {
+      const newLayout = updateNodeRatio(s.layout, nodeId, ratio);
+      return newLayout ? { layout: newLayout } : s;
+    }),
 }));

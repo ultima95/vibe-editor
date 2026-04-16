@@ -7,6 +7,7 @@ export interface Tab {
   isDirty?: boolean;
   diffCached?: boolean;
   cwd?: string;
+  previewMode?: boolean;
 }
 
 export interface TabGroup {
@@ -18,6 +19,7 @@ export interface TabGroup {
 export type SplitDirection = "horizontal" | "vertical";
 
 export interface SplitNode {
+  id?: string;
   type: "leaf" | "split";
   direction?: SplitDirection;
   ratio?: number;
