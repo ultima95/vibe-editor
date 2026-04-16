@@ -278,6 +278,9 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
         if (terminalRef.current) {
           terminalRef.current.options.theme = getTerminalTheme(state.colorTheme);
         }
+        if (containerRef.current) {
+          containerRef.current.style.backgroundColor = getTerminalTheme(state.colorTheme).background!;
+        }
       }
     });
     return () => unsub();
@@ -290,6 +293,7 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
         width: "100%",
         height: "100%",
         display: isActive ? "block" : "none",
+        backgroundColor: getTerminalTheme(useSettingsStore.getState().colorTheme).background,
       }}
     />
   );
