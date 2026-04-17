@@ -59,9 +59,19 @@ export function Sidebar() {
         cursor: "col-resize",
         background: "transparent",
         flexShrink: 0,
+        borderRight: position === "left" ? "1px solid var(--border)" : "none",
+        borderLeft: position === "right" ? "1px solid var(--border)" : "none",
       }}
-      onMouseEnter={(e) => ((e.target as HTMLElement).style.background = "var(--accent)")}
-      onMouseLeave={(e) => ((e.target as HTMLElement).style.background = "transparent")}
+      onMouseEnter={(e) => {
+        const el = e.target as HTMLElement;
+        el.style.background = "var(--accent)";
+        el.style.borderColor = "var(--accent)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.target as HTMLElement;
+        el.style.background = "transparent";
+        el.style.borderColor = "var(--border)";
+      }}
     />
   );
 
@@ -73,8 +83,6 @@ export function Sidebar() {
         width,
         flexShrink: 0,
         background: "var(--bg-secondary)",
-        borderRight: position === "left" ? "1px solid var(--border)" : "none",
-        borderLeft: position === "right" ? "1px solid var(--border)" : "none",
       }}
     >
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>

@@ -244,6 +244,9 @@ function applyBlur(blur: number) {
     root.style.backdropFilter = value;
     // @ts-expect-error -- WebKit vendor prefix
     root.style.webkitBackdropFilter = value;
+    // Force continuous compositing so the blur persists when the window
+    // loses focus or the user stops interacting.
+    root.style.willChange = blur > 0 ? "backdrop-filter" : "";
   }
 }
 
