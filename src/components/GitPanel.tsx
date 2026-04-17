@@ -3,7 +3,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { useGitStore, GitFileStatus } from "../store/git-store";
 import { useTabStore } from "../store/tab-store";
 import { BranchPicker } from "./BranchPicker";
-import { GitBranch, RotateCcw, Plus, Minus, MoreHorizontal } from "lucide-react";
+import { GitBranch, RotateCcw, Plus, Minus, MoreHorizontal, History } from "lucide-react";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -181,13 +181,38 @@ export function GitPanel() {
     });
   };
 
-  const handleCommit = () => {
+  const handleCommit = async () => {
     if (!commitMsg.trim()) return;
+    if (git.stagedFiles.length === 0) {
+      const hasChanges = git.changedFiles.length > 0 || git.untrackedFiles.length > 0;
+      if (!hasChanges) return;
+      const confirmed = await confirm(
+        "No staged changes. Stage all changes and commit?",
+        { title: "Commit", kind: "warning" },
+      );
+      if (!confirmed) return;
+      await git.stageFiles([
+        ...git.changedFiles.map((f) => f.path),
+        ...git.untrackedFiles.map((f) => f.path),
+      ]);
+    }
     git.commit(commitMsg.trim());
     setCommitMsg("");
   };
 
+  const handlePush = () => {
+    git.push();
+  };
+
+  const openGitLog = () => {
+    const { addTab, activeGroupId } = useTabStore.getState();
+    addTab(activeGroupId, { id: `git-log-${Date.now()}`, type: "git-log", title: "Git Log" });
+  };
+
   const disabled = !!git.operationInProgress;
+  const noStagedChanges = git.stagedFiles.length === 0;
+  const hasAnyChanges = git.stagedFiles.length > 0 || git.changedFiles.length > 0 || git.untrackedFiles.length > 0;
+  const showPush = noStagedChanges && git.ahead > 0 && !commitMsg.trim();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
@@ -246,12 +271,16 @@ export function GitPanel() {
         />
         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
           <button
-            onClick={handleCommit}
-            disabled={disabled || !commitMsg.trim() || git.stagedFiles.length === 0}
+            onClick={showPush ? handlePush : handleCommit}
+            disabled={showPush
+              ? disabled
+              : disabled || !commitMsg.trim() || !hasAnyChanges}
             style={{
               flex: 1,
-              background: disabled || !commitMsg.trim() || git.stagedFiles.length === 0
-                ? "var(--border)" : "var(--accent)",
+              background: showPush
+                ? (disabled ? "var(--border)" : "var(--success)")
+                : (disabled || !commitMsg.trim() || !hasAnyChanges
+                  ? "var(--border)" : "var(--accent)"),
               color: "white",
               border: "none",
               padding: "4px 8px",
@@ -260,7 +289,9 @@ export function GitPanel() {
               cursor: disabled ? "not-allowed" : "pointer",
             }}
           >
-            {git.operationInProgress === "committing" ? "Committing..." : "Commit"}
+            {showPush
+              ? (git.operationInProgress === "pushing" ? "Pushing..." : `Push ↑${git.ahead}`)
+              : (git.operationInProgress === "committing" ? "Committing..." : "Commit")}
           </button>
           <div ref={overflowRef} style={{ position: "relative" }}>
             <button
@@ -393,6 +424,29 @@ export function GitPanel() {
       </div>
 
       <div style={{ flex: 1, overflow: "auto" }}>
+        {/* Quick action: open git history */}
+        <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
+          <button
+            onClick={openGitLog}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              padding: "5px 8px",
+              borderRadius: 4,
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            <History size={13} strokeWidth={1.75} />
+            View History
+          </button>
+        </div>
         {git.conflictedFiles.length > 0 && (
           <FileSection
             title="Conflicts"

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store/app-store";
 import { BranchInfo } from "../store/git-store";
-import { Check, Cloud } from "lucide-react";
+import { Check, Cloud, Plus } from "lucide-react";
+import { useGitStore } from "../store/git-store";
 
 interface BranchPickerProps {
   onSelect: (branch: string) => void;
@@ -13,8 +14,10 @@ interface BranchPickerProps {
 export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPickerProps) {
   const [branches, setBranches] = useState<BranchInfo[]>([]);
   const [filter, setFilter] = useState("");
+  const [creating, setCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const workspaceRoot = useAppStore((s) => s.workspaceRoot);
+  const createBranch = useGitStore((s) => s.createBranch);
 
   useEffect(() => {
     if (workspaceRoot) {
@@ -26,6 +29,18 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
   const filtered = branches
     .filter((b) => !excludeCurrent || !b.is_current)
     .filter((b) => b.name.toLowerCase().includes(filter.toLowerCase()));
+
+  const trimmedFilter = filter.trim();
+  const exactMatch = branches.some((b) => b.name === trimmedFilter);
+  const canCreate = trimmedFilter.length > 0 && !exactMatch;
+
+  const handleCreate = async () => {
+    if (!canCreate || creating) return;
+    setCreating(true);
+    await createBranch(trimmedFilter);
+    onSelect(trimmedFilter);
+    onClose();
+  };
 
   return (
     <div
@@ -50,9 +65,13 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
         onChange={(e) => setFilter(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Escape") onClose();
-          if (e.key === "Enter" && filtered.length > 0) {
-            onSelect(filtered[0].name);
-            onClose();
+          if (e.key === "Enter") {
+            if (filtered.length > 0) {
+              onSelect(filtered[0].name);
+              onClose();
+            } else if (canCreate) {
+              handleCreate();
+            }
           }
         }}
         placeholder="Filter branches..."
@@ -91,7 +110,27 @@ export function BranchPicker({ onSelect, onClose, excludeCurrent }: BranchPicker
           <span>{b.name}</span>
         </div>
       ))}
-      {filtered.length === 0 && (
+      {canCreate && (
+        <div
+          onClick={handleCreate}
+          style={{
+            padding: "6px 8px",
+            cursor: creating ? "wait" : "pointer",
+            fontSize: 12,
+            color: "var(--accent)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            borderTop: filtered.length > 0 ? "1px solid var(--border)" : "none",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(148,163,184,0.08)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+        >
+          <Plus size={12} strokeWidth={2} />
+          <span>Create branch <strong>{trimmedFilter}</strong></span>
+        </div>
+      )}
+      {filtered.length === 0 && !canCreate && (
         <div style={{ padding: 8, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
           No branches found
         </div>

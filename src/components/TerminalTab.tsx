@@ -207,13 +207,15 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
 
-    // Load WebGL addon for better rendering (cursor, colors)
-    try {
-      const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => webglAddon.dispose());
-      terminal.loadAddon(webglAddon);
-    } catch {
-      // WebGL not available, fall back to canvas renderer
+    // Load WebGL addon for better rendering (skip when transparent - WebGL canvas blocks transparency)
+    if (appOpacity >= 1) {
+      try {
+        const webglAddon = new WebglAddon();
+        webglAddon.onContextLoss(() => webglAddon.dispose());
+        terminal.loadAddon(webglAddon);
+      } catch {
+        // WebGL not available, fall back to canvas renderer
+      }
     }
 
     fitAddon.fit();
