@@ -10,8 +10,8 @@ interface SettingsModalProps {
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const {
-    borderRadius, appOpacity, colorTheme,
-    setBorderRadius, setAppOpacity, setColorTheme, save,
+    borderRadius, appOpacity, backgroundBlur, colorTheme,
+    setBorderRadius, setAppOpacity, setBackgroundBlur, setColorTheme, save,
   } = useSettingsStore();
   const { position, setPosition } = useSidebarStore();
   const [saving, setSaving] = useState(false);
@@ -119,6 +119,19 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               step={0.05}
               value={appOpacity}
               onChange={(e) => setAppOpacity(Number(e.target.value))}
+              style={sliderStyle}
+            />
+          </Section>
+
+          {/* Background Blur */}
+          <Section title="Background Blur" value={`${backgroundBlur}px`}>
+            <input
+              type="range"
+              min={0}
+              max={40}
+              step={1}
+              value={backgroundBlur}
+              onChange={(e) => setBackgroundBlur(Number(e.target.value))}
               style={sliderStyle}
             />
           </Section>

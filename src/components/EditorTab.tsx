@@ -8,6 +8,7 @@ import { python } from "@codemirror/lang-python";
 import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { json } from "@codemirror/lang-json";
+import { cpp } from "@codemirror/lang-cpp";
 import { useFileSystem } from "../hooks/use-file-system";
 import { useTabStore } from "../store/tab-store";
 import { useSettingsStore } from "../store/settings-store";
@@ -44,6 +45,14 @@ function getLanguageExtension(filePath: string) {
       return css();
     case "json":
       return json();
+    case "c":
+    case "cpp":
+    case "cc":
+    case "cxx":
+    case "h":
+    case "hpp":
+    case "hxx":
+      return cpp();
     default:
       return [];
   }

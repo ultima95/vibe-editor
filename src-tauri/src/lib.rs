@@ -204,118 +204,171 @@ fn set_vibrancy(app: AppHandle, _enabled: bool) -> Result<(), String> {
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
-fn git_status(workspace_root: String) -> Result<git_service::GitStatusResult, String> {
-    git_service::git_status_impl(&workspace_root)
+async fn git_status(workspace_root: String) -> Result<git_service::GitStatusResult, String> {
+    tokio::task::spawn_blocking(move || git_service::git_status_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_diff(workspace_root: String, path: String, cached: bool) -> Result<String, String> {
-    git_service::git_diff_impl(&workspace_root, &path, cached)
+async fn git_diff(workspace_root: String, path: String, cached: bool) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_diff_impl(&workspace_root, &path, cached))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_stage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
-    git_service::git_stage_impl(&workspace_root, paths)
+async fn git_stage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_stage_impl(&workspace_root, paths))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_unstage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
-    git_service::git_unstage_impl(&workspace_root, paths)
+async fn git_unstage(workspace_root: String, paths: Vec<String>) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_unstage_impl(&workspace_root, paths))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_discard(workspace_root: String, path: String) -> Result<(), String> {
-    git_service::git_discard_impl(&workspace_root, &path)
+async fn git_discard(workspace_root: String, path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_discard_impl(&workspace_root, &path))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_commit(workspace_root: String, message: String) -> Result<(), String> {
-    git_service::git_commit_impl(&workspace_root, &message)
+async fn git_commit(workspace_root: String, message: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_commit_impl(&workspace_root, &message))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_init(workspace_root: String) -> Result<(), String> {
-    git_service::git_init_impl(&workspace_root)
+async fn git_init(workspace_root: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_init_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_log(workspace_root: String, skip: u32, limit: u32) -> Result<Vec<git_service::LogEntry>, String> {
-    git_service::git_log_impl(&workspace_root, skip, limit)
+async fn git_log(workspace_root: String, skip: u32, limit: u32) -> Result<Vec<git_service::LogEntry>, String> {
+    tokio::task::spawn_blocking(move || git_service::git_log_impl(&workspace_root, skip, limit))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_branches(workspace_root: String) -> Result<Vec<git_service::BranchInfo>, String> {
-    git_service::git_branches_impl(&workspace_root)
+async fn git_branches(workspace_root: String) -> Result<Vec<git_service::BranchInfo>, String> {
+    tokio::task::spawn_blocking(move || git_service::git_branches_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_checkout_branch(workspace_root: String, branch: String) -> Result<(), String> {
-    git_service::git_checkout_branch_impl(&workspace_root, &branch)
+async fn git_checkout_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_checkout_branch_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_create_branch(workspace_root: String, branch: String) -> Result<(), String> {
-    git_service::git_create_branch_impl(&workspace_root, &branch)
+async fn git_create_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_create_branch_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_delete_branch(workspace_root: String, branch: String) -> Result<(), String> {
-    git_service::git_delete_branch_impl(&workspace_root, &branch)
+async fn git_delete_branch(workspace_root: String, branch: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_delete_branch_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_merge(workspace_root: String, branch: String) -> Result<String, String> {
-    git_service::git_merge_impl(&workspace_root, &branch)
+async fn git_merge(workspace_root: String, branch: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_merge_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_merge_abort(workspace_root: String) -> Result<(), String> {
-    git_service::git_merge_abort_impl(&workspace_root)
+async fn git_merge_abort(workspace_root: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_merge_abort_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_rebase(workspace_root: String, branch: String) -> Result<String, String> {
-    git_service::git_rebase_impl(&workspace_root, &branch)
+async fn git_rebase(workspace_root: String, branch: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_rebase_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_rebase_abort(workspace_root: String) -> Result<(), String> {
-    git_service::git_rebase_abort_impl(&workspace_root)
+async fn git_rebase_abort(workspace_root: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_rebase_abort_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_rebase_continue(workspace_root: String) -> Result<(), String> {
-    git_service::git_rebase_continue_impl(&workspace_root)
+async fn git_rebase_continue(workspace_root: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_rebase_continue_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_stash_push(workspace_root: String) -> Result<(), String> {
-    git_service::git_stash_push_impl(&workspace_root)
+async fn git_stash_push(workspace_root: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_stash_push_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_stash_pop(workspace_root: String, index: Option<u32>) -> Result<(), String> {
-    git_service::git_stash_pop_impl(&workspace_root, index)
+async fn git_stash_pop(workspace_root: String, index: Option<u32>) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_stash_pop_impl(&workspace_root, index))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_stash_drop(workspace_root: String, index: u32) -> Result<(), String> {
-    git_service::git_stash_drop_impl(&workspace_root, index)
+async fn git_stash_drop(workspace_root: String, index: u32) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || git_service::git_stash_drop_impl(&workspace_root, index))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_stash_list(workspace_root: String) -> Result<Vec<git_service::StashEntry>, String> {
-    git_service::git_stash_list_impl(&workspace_root)
+async fn git_stash_list(workspace_root: String) -> Result<Vec<git_service::StashEntry>, String> {
+    tokio::task::spawn_blocking(move || git_service::git_stash_list_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_push(workspace_root: String) -> Result<String, String> {
-    git_service::git_push_impl(&workspace_root)
+async fn git_push(workspace_root: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_push_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-fn git_pull(workspace_root: String) -> Result<String, String> {
-    git_service::git_pull_impl(&workspace_root)
+async fn git_pull(workspace_root: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_pull_impl(&workspace_root))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn git_commit_files(workspace_root: String, hash: String) -> Result<Vec<git_service::CommitFile>, String> {
+    tokio::task::spawn_blocking(move || git_service::git_commit_files_impl(&workspace_root, &hash))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -376,6 +429,7 @@ pub fn run() {
             git_stash_list,
             git_push,
             git_pull,
+            git_commit_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

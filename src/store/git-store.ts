@@ -18,9 +18,15 @@ export interface StashEntry {
 
 export interface LogEntry {
   hash: string;
+  short_hash: string;
   message: string;
   author: string;
   timestamp: string;
+}
+
+export interface CommitFile {
+  path: string;
+  status: string;
 }
 
 export interface BranchInfo {

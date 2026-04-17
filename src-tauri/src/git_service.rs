@@ -36,9 +36,16 @@ pub struct StashEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
     pub hash: String,
+    pub short_hash: String,
     pub message: String,
     pub author: String,
     pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitFile {
+    pub path: String,
+    pub status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -319,7 +326,8 @@ pub fn git_log_impl(cwd: &str, skip: u32, limit: u32) -> Result<Vec<LogEntry>, S
         let parts: Vec<&str> = line.splitn(4, '\0').collect();
         if parts.len() >= 4 {
             entries.push(LogEntry {
-                hash: parts[0].chars().take(7).collect(),
+                hash: parts[0].to_string(),
+                short_hash: parts[0].chars().take(7).collect(),
                 message: parts[1].to_string(),
                 author: parts[2].to_string(),
                 timestamp: parts[3].to_string(),
@@ -460,4 +468,37 @@ pub fn git_push_impl(cwd: &str) -> Result<String, String> {
 
 pub fn git_pull_impl(cwd: &str) -> Result<String, String> {
     run_git(cwd, &["pull"])
+}
+
+pub fn git_commit_files_impl(cwd: &str, hash: &str) -> Result<Vec<CommitFile>, String> {
+    let raw = run_git(cwd, &["diff-tree", "--no-commit-id", "-r", "--name-status", hash])?;
+
+    let mut files = Vec::new();
+    for line in raw.lines() {
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(2, '\t').collect();
+        if parts.len() >= 2 {
+            let status_code = parts[0];
+            let status = if status_code == "A" {
+                "Added"
+            } else if status_code == "M" {
+                "Modified"
+            } else if status_code == "D" {
+                "Deleted"
+            } else if status_code.starts_with('R') {
+                "Renamed"
+            } else if status_code.starts_with('C') {
+                "Copied"
+            } else {
+                "Modified"
+            };
+            files.push(CommitFile {
+                path: parts[1].to_string(),
+                status: status.to_string(),
+            });
+        }
+    }
+    Ok(files)
 }

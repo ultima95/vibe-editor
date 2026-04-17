@@ -19,6 +19,7 @@
   --tab-height: 36px;
   --sidebar-min-width: 180px;
   --sidebar-default-width: 240px;
+  --background-blur: 0px;
 }
 
 * {
@@ -41,6 +42,8 @@ html, body, #root {
   background: var(--bg-primary);
   border-radius: 10px;
   overflow: hidden;
+  backdrop-filter: blur(var(--background-blur));
+  -webkit-backdrop-filter: blur(var(--background-blur));
 }
 
 ::-webkit-scrollbar {
@@ -97,4 +100,22 @@ html, body, #root {
 
 .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Transparent mode: force CodeMirror backgrounds transparent --- */
+.transparent-mode .cm-editor,
+.transparent-mode .cm-editor .cm-gutters,
+.transparent-mode .cm-editor .cm-activeLineGutter,
+.transparent-mode .cm-editor .cm-gutter,
+.transparent-mode .cm-editor .cm-scroller {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.transparent-mode .cm-editor .cm-activeLine {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.transparent-mode .cm-editor .cm-activeLineGutter {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }

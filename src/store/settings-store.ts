@@ -170,10 +170,12 @@ export const themes: ColorTheme[] = [
 export interface SettingsState {
   borderRadius: number;
   appOpacity: number;
+  backgroundBlur: number;
   colorTheme: string;
 
   setBorderRadius: (v: number) => void;
   setAppOpacity: (v: number) => void;
+  setBackgroundBlur: (v: number) => void;
   setColorTheme: (id: string) => void;
   loadFromConfig: () => Promise<void>;
   save: () => Promise<void>;
@@ -228,12 +230,18 @@ function applyOpacity(opacity: number) {
   root.style.setProperty("--bg-primary", hexToRgba(primary, opacity));
   root.style.setProperty("--bg-secondary", hexToRgba(secondary, opacity));
   root.style.setProperty("--bg-tertiary", hexToRgba(tertiary, opacity));
+  root.classList.toggle("transparent-mode", opacity < 1);
   invoke("set_vibrancy", { enabled: opacity < 1 }).catch(() => {});
+}
+
+function applyBlur(blur: number) {
+  document.documentElement.style.setProperty("--background-blur", `${blur}px`);
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   borderRadius: 10,
   appOpacity: 1.0,
+  backgroundBlur: 0,
   colorTheme: "one-dark",
 
   setBorderRadius: (v) => {
@@ -244,6 +252,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setAppOpacity: (v) => {
     set({ appOpacity: v });
     applyOpacity(v);
+  },
+
+  setBackgroundBlur: (v) => {
+    set({ backgroundBlur: v });
+    applyBlur(v);
   },
 
   setColorTheme: (id) => {
@@ -258,6 +271,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         sidebar_visible: boolean;
         border_radius: number;
         app_opacity: number;
+        background_blur: number;
         color_theme: string;
       }>("load_config");
 
@@ -268,12 +282,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({
         borderRadius: config.border_radius,
         appOpacity: config.app_opacity,
+        backgroundBlur: config.background_blur ?? 0,
         colorTheme: config.color_theme,
       });
 
       applyTheme(config.color_theme);
       applyBorderRadius(config.border_radius);
       applyOpacity(config.app_opacity);
+      applyBlur(config.background_blur ?? 0);
     } catch (e) {
       console.error("Failed to load config:", e);
     }
@@ -281,7 +297,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   save: async () => {
     try {
-      const { borderRadius, appOpacity, colorTheme } = get();
+      const { borderRadius, appOpacity, backgroundBlur, colorTheme } = get();
       const sidebar = useSidebarStore.getState();
       const config = {
         sidebar_position: sidebar.position,
@@ -290,6 +306,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         font_family: "SF Mono, Menlo, Monaco, monospace",
         border_radius: borderRadius,
         app_opacity: appOpacity,
+        background_blur: backgroundBlur,
         color_theme: colorTheme,
         recent_projects: [],
       };

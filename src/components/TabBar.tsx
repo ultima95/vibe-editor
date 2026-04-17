@@ -1,20 +1,6 @@
-import { useState } from "react";
 import { Tab } from "../types";
 import { Terminal, FileCode, GitCompare, GitCommitHorizontal, BookOpen, Code, PanelRight } from "lucide-react";
-
-export const TAB_DRAG_TYPE = "application/vibe-tab";
-
-// Module-level drag state as a reliable fallback for webviews
-// where dataTransfer with custom MIME types may not work.
-let currentDragData: { tabId: string; fromGroupId: string; tab: Tab } | null = null;
-
-export function getDragData() {
-  return currentDragData;
-}
-
-export function clearDragData() {
-  currentDragData = null;
-}
+import { startTabDrag } from "../hooks/use-tab-drag";
 
 interface TabBarProps {
   tabs: Tab[];
@@ -22,7 +8,6 @@ interface TabBarProps {
   groupId: string;
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
-  onDropTab: (tabId: string, fromGroupId: string) => void;
   onTogglePreview?: () => void;
   onSplitRight?: () => void;
   onSplitDown?: () => void;
@@ -36,47 +21,22 @@ export function TabBar({
   groupId,
   onSelectTab,
   onCloseTab,
-  onDropTab,
   onTogglePreview,
   onSplitRight,
   onSplitDown,
   showPreviewToggle,
   isPreviewActive,
 }: TabBarProps) {
-  const [dragOver, setDragOver] = useState(false);
-
   return (
     <div
-      onDragOver={(e) => {
-        if (!currentDragData && !e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        const data = currentDragData ?? (() => {
-          try { return JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE)); } catch { return null; }
-        })();
-        if (data && data.fromGroupId !== groupId) {
-          onDropTab(data.tabId, data.fromGroupId);
-        }
-      }}
       style={{
         display: "flex",
         alignItems: "center",
-        background: dragOver
-          ? "rgba(59, 130, 246, 0.1)"
-          : "var(--bg-secondary)",
-        borderBottom: dragOver
-          ? "2px solid var(--accent)"
-          : "1px solid var(--border)",
+        background: "var(--bg-secondary)",
+        borderBottom: "1px solid var(--border)",
         height: "var(--tab-height)",
         overflow: "hidden",
         flexShrink: 0,
-        transition: "background 0.15s, border-color 0.15s",
       }}
     >
       {tabs.map((tab) => {
@@ -85,18 +45,9 @@ export function TabBar({
         return (
           <div
             key={tab.id}
-            draggable
-            onDragStart={(e) => {
-              const data = { tabId: tab.id, fromGroupId: groupId, tab };
-              currentDragData = data;
-              e.dataTransfer.setData(
-                TAB_DRAG_TYPE,
-                JSON.stringify(data),
-              );
-              e.dataTransfer.effectAllowed = "move";
-            }}
-            onDragEnd={() => {
-              currentDragData = null;
+            onMouseDown={(e) => {
+              if (e.button !== 0) return;
+              startTabDrag(e, { tabId: tab.id, fromGroupId: groupId, tab }, tab.title);
             }}
             onClick={() => onSelectTab(tab.id)}
             style={{

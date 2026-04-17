@@ -18,6 +18,8 @@ pub struct AppConfig {
     pub app_opacity: f64,
     #[serde(default = "default_color_theme")]
     pub color_theme: String,
+    #[serde(default = "default_background_blur")]
+    pub background_blur: f64,
     #[serde(default)]
     pub recent_projects: Vec<String>,
 }
@@ -29,6 +31,7 @@ fn default_font_family() -> String { "SF Mono, Menlo, Monaco, monospace".into() 
 fn default_border_radius() -> u16 { 10 }
 fn default_app_opacity() -> f64 { 1.0 }
 fn default_color_theme() -> String { "midnight".into() }
+fn default_background_blur() -> f64 { 0.0 }
 
 impl Default for AppConfig {
     fn default() -> Self {
@@ -40,6 +43,7 @@ impl Default for AppConfig {
             border_radius: default_border_radius(),
             app_opacity: default_app_opacity(),
             color_theme: default_color_theme(),
+            background_blur: default_background_blur(),
             recent_projects: Vec::new(),
         }
     }

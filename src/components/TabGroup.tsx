@@ -14,7 +14,6 @@ export function TabGroup({ groupId }: TabGroupProps) {
   const setActiveTab = useTabStore((s) => s.setActiveTab);
   const removeTab = useTabStore((s) => s.removeTab);
   const setActiveGroupId = useTabStore((s) => s.setActiveGroupId);
-  const moveTab = useTabStore((s) => s.moveTab);
   const togglePreviewMode = useTabStore((s) => s.togglePreviewMode);
   const splitGroup = useTabStore((s) => s.splitGroup);
 
@@ -39,7 +38,6 @@ export function TabGroup({ groupId }: TabGroupProps) {
         groupId={groupId}
         onSelectTab={(tabId) => setActiveTab(groupId, tabId)}
         onCloseTab={(tabId) => removeTab(groupId, tabId)}
-        onDropTab={(tabId, fromGroupId) => moveTab(fromGroupId, groupId, tabId)}
         showPreviewToggle={isMarkdown}
         isPreviewActive={activeTab?.previewMode ?? false}
         onTogglePreview={() => {
