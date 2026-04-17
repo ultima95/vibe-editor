@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { useGitStore, GitFileStatus } from "../store/git-store";
 import { useTabStore } from "../store/tab-store";
 import { BranchPicker } from "./BranchPicker";
@@ -424,7 +425,10 @@ export function GitPanel() {
             onOpenDiff={(f) => openDiff(f.path, false)}
             onStageFile={(f) => git.stageFiles([f.path])}
             onStageAll={() => git.stageFiles(git.changedFiles.map((f) => f.path))}
-            onDiscardFile={(f) => git.discardFile(f.path)}
+            onDiscardFile={async (f) => {
+              const confirmed = await confirm(`Discard changes to "${f.path}"? This cannot be undone.`, { title: "Discard Changes", kind: "warning" });
+              if (confirmed) git.discardFile(f.path);
+            }}
           />
         )}
 

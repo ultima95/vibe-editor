@@ -65,16 +65,19 @@ export function SearchPanel() {
   const openResult = useCallback(
     (result: TextSearchResult) => {
       const name = result.path.split("/").pop() ?? result.path;
+      const absolutePath = workspaceRoot
+        ? `${workspaceRoot}/${result.path}`
+        : result.path;
       const tab: Tab = {
         id: `editor-${Date.now()}`,
         type: "editor",
         title: name,
-        filePath: result.path,
+        filePath: absolutePath,
         isDirty: false,
       };
       addTab(activeGroupId, tab);
     },
-    [addTab, activeGroupId],
+    [addTab, activeGroupId, workspaceRoot],
   );
 
   const totalMatches = Array.from(results.values()).reduce((sum, arr) => sum + arr.length, 0);

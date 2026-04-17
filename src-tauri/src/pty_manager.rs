@@ -48,6 +48,8 @@ impl PtyManager {
 
         let mut cmd = CommandBuilder::new(&shell_path);
         cmd.arg("-l");
+        cmd.env("TERM", "xterm-256color");
+        cmd.env("COLORTERM", "truecolor");
         if let Some(dir) = cwd {
             cmd.cwd(dir);
         }

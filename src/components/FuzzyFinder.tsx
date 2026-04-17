@@ -52,17 +52,20 @@ export function FuzzyFinder({ isOpen, onClose }: FuzzyFinderProps) {
 
   const openFile = useCallback(
     (result: SearchResult) => {
+      const absolutePath = workspaceRoot
+        ? `${workspaceRoot}/${result.path}`
+        : result.path;
       const tab: Tab = {
         id: `editor-${Date.now()}`,
         type: "editor",
         title: result.name,
-        filePath: result.path,
+        filePath: absolutePath,
         isDirty: false,
       };
       addTab(activeGroupId, tab);
       onClose();
     },
-    [addTab, activeGroupId, onClose],
+    [addTab, activeGroupId, onClose, workspaceRoot],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

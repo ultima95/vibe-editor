@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
 import { usePty } from "../hooks/use-pty";
 import { useSettingsStore } from "../store/settings-store";
 import type { ITheme } from "@xterm/xterm";
@@ -197,6 +198,7 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
       fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
       theme: getTerminalTheme(colorTheme, appOpacity),
       cursorBlink: true,
+      cursorStyle: "bar",
       allowProposedApi: true,
       allowTransparency: true,
     });
@@ -205,7 +207,27 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
 
+    // Load WebGL addon for better rendering (cursor, colors)
+    try {
+      const webglAddon = new WebglAddon();
+      webglAddon.onContextLoss(() => webglAddon.dispose());
+      terminal.loadAddon(webglAddon);
+    } catch {
+      // WebGL not available, fall back to canvas renderer
+    }
+
     fitAddon.fit();
+
+    // Shift+Enter sends newline instead of carriage return
+    terminal.attachCustomKeyEventHandler((ev) => {
+      if (ev.type === "keydown" && ev.key === "Enter" && ev.shiftKey) {
+        ev.preventDefault();
+        write("\n");
+        return false;
+      }
+      return true;
+    });
+
     terminal.onData((data) => write(data));
 
     terminalRef.current = terminal;

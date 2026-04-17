@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useSidebarStore } from "../store/sidebar-store";
+import { useGitStore } from "../store/git-store";
 import { FileTree } from "./FileTree";
 import { SearchPanel } from "./SearchPanel";
 import { GitPanel } from "./GitPanel";
@@ -13,6 +14,7 @@ const panelIcons = {
 
 export function Sidebar() {
   const { visible, position, width, setWidth, activePanel, setActivePanel } = useSidebarStore();
+  const gitChangeCount = useGitStore((s) => s.stagedFiles.length + s.changedFiles.length + s.untrackedFiles.length);
   const resizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
@@ -90,6 +92,7 @@ export function Sidebar() {
                 onClick={() => setActivePanel(panel)}
                 title={panel.charAt(0).toUpperCase() + panel.slice(1)}
                 style={{
+                  position: "relative",
                   flex: 1,
                   display: "flex",
                   alignItems: "center",
@@ -110,6 +113,26 @@ export function Sidebar() {
                 }}
               >
                 <Icon size={16} strokeWidth={1.75} />
+                {panel === "git" && gitChangeCount > 0 && (
+                  <span style={{
+                    position: "absolute",
+                    top: 4,
+                    right: "calc(50% - 14px)",
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: "var(--accent)",
+                    color: "#fff",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    lineHeight: "16px",
+                    textAlign: "center",
+                    padding: "0 4px",
+                    pointerEvents: "none",
+                  }}>
+                    {gitChangeCount > 99 ? "99+" : gitChangeCount}
+                  </span>
+                )}
               </button>
             );
           })}

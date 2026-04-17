@@ -4,6 +4,18 @@ import { Terminal, FileCode, GitCompare, GitCommitHorizontal, BookOpen, Code, Pa
 
 export const TAB_DRAG_TYPE = "application/vibe-tab";
 
+// Module-level drag state as a reliable fallback for webviews
+// where dataTransfer with custom MIME types may not work.
+let currentDragData: { tabId: string; fromGroupId: string; tab: Tab } | null = null;
+
+export function getDragData() {
+  return currentDragData;
+}
+
+export function clearDragData() {
+  currentDragData = null;
+}
+
 interface TabBarProps {
   tabs: Tab[];
   activeTabId: string;
@@ -36,7 +48,7 @@ export function TabBar({
   return (
     <div
       onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
+        if (!currentDragData && !e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
         setDragOver(true);
@@ -45,13 +57,11 @@ export function TabBar({
       onDrop={(e) => {
         e.preventDefault();
         setDragOver(false);
-        try {
-          const data = JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE));
-          if (data.fromGroupId !== groupId) {
-            onDropTab(data.tabId, data.fromGroupId);
-          }
-        } catch {
-          /* ignore invalid drag data */
+        const data = currentDragData ?? (() => {
+          try { return JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE)); } catch { return null; }
+        })();
+        if (data && data.fromGroupId !== groupId) {
+          onDropTab(data.tabId, data.fromGroupId);
         }
       }}
       style={{
@@ -77,11 +87,16 @@ export function TabBar({
             key={tab.id}
             draggable
             onDragStart={(e) => {
+              const data = { tabId: tab.id, fromGroupId: groupId, tab };
+              currentDragData = data;
               e.dataTransfer.setData(
                 TAB_DRAG_TYPE,
-                JSON.stringify({ tabId: tab.id, fromGroupId: groupId, tab }),
+                JSON.stringify(data),
               );
               e.dataTransfer.effectAllowed = "move";
+            }}
+            onDragEnd={() => {
+              currentDragData = null;
             }}
             onClick={() => onSelectTab(tab.id)}
             style={{

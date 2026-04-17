@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useTabStore } from "../store/tab-store";
 import { TabGroup } from "./TabGroup";
 import { SplitNode, SplitDirection, Tab } from "../types";
-import { TAB_DRAG_TYPE } from "./TabBar";
+import { TAB_DRAG_TYPE, getDragData } from "./TabBar";
 import { SplitDivider } from "./SplitDivider";
 
 type Edge = "left" | "right" | "bottom";
@@ -54,7 +54,7 @@ function EdgeDropZone({
           pointerEvents: active ? "auto" : "none",
         }}
         onDragOver={(e) => {
-          if (!e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
+          if (!getDragData() && !e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
           e.preventDefault();
           e.stopPropagation();
           e.dataTransfer.dropEffect = "move";
@@ -65,22 +65,22 @@ function EdgeDropZone({
           e.preventDefault();
           e.stopPropagation();
           setHovering(false);
-          try {
-            const data = JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE));
-            const tab: Tab = data.tab;
-            const fromGroupId: string = data.fromGroupId;
-            const tabId: string = data.tabId;
+          const data = getDragData() ?? (() => {
+            try { return JSON.parse(e.dataTransfer.getData(TAB_DRAG_TYPE)); } catch { return null; }
+          })();
+          if (!data) return;
 
-            if (fromGroupId === groupId) {
-              const group = useTabStore.getState().groups[groupId];
-              if (group && group.tabs.length <= 1) return;
-            }
+          const tab: Tab = data.tab;
+          const fromGroupId: string = data.fromGroupId;
+          const tabId: string = data.tabId;
 
-            splitGroup(groupId, direction, tab, insertBefore);
-            removeTab(fromGroupId, tabId);
-          } catch {
-            /* ignore invalid drag data */
+          if (fromGroupId === groupId) {
+            const group = useTabStore.getState().groups[groupId];
+            if (group && group.tabs.length <= 1) return;
           }
+
+          splitGroup(groupId, direction, tab, insertBefore);
+          removeTab(fromGroupId, tabId);
         }}
       />
       {/* Visual overlay showing where the split will appear */}
@@ -112,7 +112,7 @@ function DroppableLeaf({ groupId }: { groupId: string }) {
   const dragCounter = useRef(0);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
-    if (!e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
+    if (!getDragData() && !e.dataTransfer.types.includes(TAB_DRAG_TYPE)) return;
     dragCounter.current++;
     setDragActive(true);
   }, []);
