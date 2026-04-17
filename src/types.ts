@@ -1,6 +1,6 @@
 export interface Tab {
   id: string;
-  type: "terminal" | "editor" | "diff" | "git-log";
+  type: "terminal" | "editor" | "diff" | "git-log" | "commit-diff";
   title: string;
   ptyId?: string;
   filePath?: string;
@@ -8,6 +8,7 @@ export interface Tab {
   diffCached?: boolean;
   cwd?: string;
   previewMode?: boolean;
+  commitHash?: string;
 }
 
 export interface TabGroup {

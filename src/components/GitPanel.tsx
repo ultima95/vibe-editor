@@ -212,7 +212,8 @@ export function GitPanel() {
   const disabled = !!git.operationInProgress;
   const noStagedChanges = git.stagedFiles.length === 0;
   const hasAnyChanges = git.stagedFiles.length > 0 || git.changedFiles.length > 0 || git.untrackedFiles.length > 0;
-  const showPush = noStagedChanges && git.ahead > 0 && !commitMsg.trim();
+  const showPublish = !git.hasUpstream && git.branch && !commitMsg.trim();
+  const showPush = !showPublish && noStagedChanges && git.ahead > 0 && !commitMsg.trim();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", fontSize: 12 }}>
@@ -271,16 +272,20 @@ export function GitPanel() {
         />
         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
           <button
-            onClick={showPush ? handlePush : handleCommit}
-            disabled={showPush
+            onClick={showPublish ? () => git.publishBranch() : showPush ? handlePush : handleCommit}
+            disabled={showPublish
               ? disabled
-              : disabled || !commitMsg.trim() || !hasAnyChanges}
+              : showPush
+                ? disabled
+                : disabled || !commitMsg.trim() || !hasAnyChanges}
             style={{
               flex: 1,
-              background: showPush
-                ? (disabled ? "var(--border)" : "var(--success)")
-                : (disabled || !commitMsg.trim() || !hasAnyChanges
-                  ? "var(--border)" : "var(--accent)"),
+              background: showPublish
+                ? (disabled ? "var(--border)" : "var(--accent)")
+                : showPush
+                  ? (disabled ? "var(--border)" : "var(--success)")
+                  : (disabled || !commitMsg.trim() || !hasAnyChanges
+                    ? "var(--border)" : "var(--accent)"),
               color: "white",
               border: "none",
               padding: "4px 8px",
@@ -289,9 +294,11 @@ export function GitPanel() {
               cursor: disabled ? "not-allowed" : "pointer",
             }}
           >
-            {showPush
-              ? (git.operationInProgress === "pushing" ? "Pushing..." : `Push ↑${git.ahead}`)
-              : (git.operationInProgress === "committing" ? "Committing..." : "Commit")}
+            {showPublish
+              ? (git.operationInProgress === "publishing" ? "Publishing..." : "Publish Branch")
+              : showPush
+                ? (git.operationInProgress === "pushing" ? "Pushing..." : `Push ↑${git.ahead}`)
+                : (git.operationInProgress === "committing" ? "Committing..." : "Commit")}
           </button>
           <div ref={overflowRef} style={{ position: "relative" }}>
             <button
@@ -324,8 +331,9 @@ export function GitPanel() {
                 }}
               >
                 {[
-                  { label: "Pull", action: () => git.pull(), disabled: disabled },
-                  { label: "Push", action: () => git.push(), disabled: disabled },
+                  { label: "Pull", action: () => git.pull(), disabled: disabled || !git.hasUpstream },
+                  { label: "Push", action: () => git.push(), disabled: disabled || !git.hasUpstream },
+                  { label: "Publish Branch", action: () => git.publishBranch(), disabled: disabled || git.hasUpstream || !git.branch },
                   { label: "Stash Changes", action: () => git.stashPush(), disabled: disabled || (git.changedFiles.length === 0 && git.untrackedFiles.length === 0) },
                   { label: "Pop Stash", action: () => git.stashPop(), disabled: disabled || git.stashEntries.length === 0 },
                   { label: "Stash List", action: () => setShowStashList(!showStashList), disabled: git.stashEntries.length === 0 },

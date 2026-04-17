@@ -58,6 +58,11 @@ function App() {
         e.preventDefault();
         setSettingsOpen((o) => !o);
       }
+      // Cmd+Shift+N: new window
+      if (e.metaKey && e.shiftKey && e.key === "n") {
+        e.preventDefault();
+        invoke("open_new_window").catch(console.error);
+      }
       // Cmd+O: open folder
       if (e.metaKey && e.key === "o") {
         e.preventDefault();

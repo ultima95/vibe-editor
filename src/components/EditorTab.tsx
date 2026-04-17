@@ -14,6 +14,8 @@ import { useTabStore } from "../store/tab-store";
 import { useSettingsStore } from "../store/settings-store";
 import { getCodeTheme } from "../editor-themes";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { cmdClickExtension } from "../editor/cmd-click";
+import { Tab } from "../types";
 
 const themeCompartment = new Compartment();
 
@@ -70,6 +72,38 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
   const [error, setError] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const { readFile, writeFile } = useFileSystem();
+
+  const handleCmdClickOpenFile = useRef((clickedPath: string) => {
+    let absolutePath: string;
+
+    if (clickedPath.startsWith("/")) {
+      absolutePath = clickedPath;
+    } else {
+      // Resolve relative to the directory of the current file
+      const currentDir = filePath.substring(0, filePath.lastIndexOf("/"));
+      absolutePath = `${currentDir}/${clickedPath}`;
+    }
+
+    // Normalize /../ and /./ segments
+    const parts = absolutePath.split("/");
+    const normalized: string[] = [];
+    for (const part of parts) {
+      if (part === "..") normalized.pop();
+      else if (part !== ".") normalized.push(part);
+    }
+    absolutePath = normalized.join("/");
+
+    const fileName = absolutePath.split("/").pop() || absolutePath;
+    const { addTab, activeGroupId } = useTabStore.getState();
+    const tab: Tab = {
+      id: `editor-${Date.now()}`,
+      type: "editor",
+      title: fileName,
+      filePath: absolutePath,
+      isDirty: false,
+    };
+    addTab(activeGroupId, tab);
+  }).current;
 
   // Phase 1: Read file content
   useEffect(() => {
@@ -128,6 +162,7 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
             }));
           }
         }),
+        cmdClickExtension({ onOpenFile: handleCmdClickOpenFile }),
       ],
     });
 

@@ -19,7 +19,6 @@
   --tab-height: 36px;
   --sidebar-min-width: 180px;
   --sidebar-default-width: 240px;
-  --background-blur: 0px;
 }
 
 * {
@@ -42,8 +41,6 @@ html, body, #root {
   background: var(--bg-primary);
   border-radius: 10px;
   overflow: hidden;
-  backdrop-filter: blur(var(--background-blur));
-  -webkit-backdrop-filter: blur(var(--background-blur));
 }
 
 ::-webkit-scrollbar {

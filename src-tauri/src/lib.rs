@@ -7,7 +7,7 @@ pub mod search;
 use pty_manager::PtyManager;
 use std::io::Read;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle};
+use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 use tauri::utils::config::WindowEffectsConfig;
 
 struct AppState {
@@ -190,6 +190,31 @@ fn unwatch_directory(state: State<'_, Arc<AppState>>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_new_window(app: AppHandle) -> Result<(), String> {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    static COUNTER: AtomicU32 = AtomicU32::new(1);
+    let id = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let label = format!("main-{}", id);
+
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("index.html".into()))
+        .title("Vibe Editor")
+        .inner_size(1200.0, 800.0)
+        .min_inner_size(600.0, 400.0)
+        .decorations(true)
+        .transparent(true)
+        .hidden_title(true)
+        .title_bar_style(TitleBarStyle::Overlay)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    window
+        .set_title_bar_style(TitleBarStyle::Overlay)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 fn set_vibrancy(app: AppHandle, _enabled: bool) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("main window not found")?;
     // Clear vibrancy effects — the window is already configured with transparent: true,
@@ -358,6 +383,13 @@ async fn git_push(workspace_root: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn git_publish_branch(workspace_root: String, branch: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_publish_branch_impl(&workspace_root, &branch))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn git_pull(workspace_root: String) -> Result<String, String> {
     tokio::task::spawn_blocking(move || git_service::git_pull_impl(&workspace_root))
         .await
@@ -367,6 +399,20 @@ async fn git_pull(workspace_root: String) -> Result<String, String> {
 #[tauri::command]
 async fn git_commit_files(workspace_root: String, hash: String) -> Result<Vec<git_service::CommitFile>, String> {
     tokio::task::spawn_blocking(move || git_service::git_commit_files_impl(&workspace_root, &hash))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn git_show_file(workspace_root: String, hash: String, path: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_show_file_impl(&workspace_root, &hash, &path))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn git_commit_diff(workspace_root: String, hash: String, path: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || git_service::git_commit_diff_impl(&workspace_root, &hash, &path))
         .await
         .map_err(|e| e.to_string())?
 }
@@ -406,6 +452,7 @@ pub fn run() {
             cmd_add_recent_project,
             unwatch_directory,
             set_vibrancy,
+            open_new_window,
             git_status,
             git_diff,
             git_stage,
@@ -428,8 +475,11 @@ pub fn run() {
             git_stash_drop,
             git_stash_list,
             git_push,
+            git_publish_branch,
             git_pull,
             git_commit_files,
+            git_show_file,
+            git_commit_diff,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

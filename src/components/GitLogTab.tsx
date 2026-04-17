@@ -78,16 +78,16 @@ function CommitFiles({ hash, isExpanded }: { hash: string; isExpanded: boolean }
     );
   }
 
-  const openFile = (filePath: string) => {
-    const root = workspaceRoot;
-    if (!root) return;
-    const fullPath = `${root}/${filePath}`;
+  const openCommitDiff = (filePath: string) => {
     const { addTab, activeGroupId } = useTabStore.getState();
+    const shortHash = hash.slice(0, 7);
+    const fileName = filePath.split("/").pop() ?? filePath;
     addTab(activeGroupId, {
-      id: `editor-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      type: "editor",
-      title: filePath.split("/").pop() ?? filePath,
-      filePath: fullPath,
+      id: `commit-diff-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type: "commit-diff",
+      title: `${fileName} @ ${shortHash}`,
+      filePath,
+      commitHash: hash,
     });
   };
 
@@ -101,7 +101,7 @@ function CommitFiles({ hash, isExpanded }: { hash: string; isExpanded: boolean }
         return (
           <div
             key={`${file.path}-${i}`}
-            onClick={isDeleted ? undefined : () => openFile(file.path)}
+            onClick={isDeleted ? undefined : () => openCommitDiff(file.path)}
             style={{
               display: "flex",
               alignItems: "center",

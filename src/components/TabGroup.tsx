@@ -4,6 +4,7 @@ import { EditorTab } from "./EditorTab";
 import { TerminalTab } from "./TerminalTab";
 import { DiffTab } from "./DiffTab";
 import { GitLogTab } from "./GitLogTab";
+import { CommitDiffTab } from "./CommitDiffTab";
 
 interface TabGroupProps {
   groupId: string;
@@ -74,6 +75,16 @@ export function TabGroup({ groupId }: TabGroupProps) {
           }
           if (tab.type === "git-log") {
             return <GitLogTab key={tab.id} isActive={isActive} />;
+          }
+          if (tab.type === "commit-diff") {
+            return (
+              <CommitDiffTab
+                key={tab.id}
+                filePath={tab.filePath ?? ""}
+                commitHash={tab.commitHash ?? ""}
+                isActive={isActive}
+              />
+            );
           }
           return (
             <EditorTab

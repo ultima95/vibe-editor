@@ -38,6 +38,7 @@ export interface BranchInfo {
 interface GitStatusResult {
   is_git_repo: boolean;
   branch: string | null;
+  has_upstream: boolean;
   ahead: number;
   behind: number;
   files: GitFileStatus[];
@@ -47,6 +48,7 @@ interface GitStore {
   isGitRepo: boolean;
   gitAvailable: boolean;
   branch: string | null;
+  hasUpstream: boolean;
   ahead: number;
   behind: number;
   stagedFiles: GitFileStatus[];
@@ -66,6 +68,7 @@ interface GitStore {
   commit: (message: string) => Promise<void>;
   initRepo: () => Promise<void>;
   push: () => Promise<void>;
+  publishBranch: () => Promise<void>;
   pull: () => Promise<void>;
   stashPush: () => Promise<void>;
   stashPop: (index?: number) => Promise<void>;
@@ -93,6 +96,7 @@ export const useGitStore = create<GitStore>((set, get) => ({
   isGitRepo: false,
   gitAvailable: true,
   branch: null,
+  hasUpstream: false,
   ahead: 0,
   behind: 0,
   stagedFiles: [],
@@ -131,6 +135,7 @@ export const useGitStore = create<GitStore>((set, get) => ({
         isGitRepo: result.is_git_repo,
         gitAvailable: true,
         branch: result.branch,
+        hasUpstream: result.has_upstream,
         ahead: result.ahead,
         behind: result.behind,
         stagedFiles: staged,
@@ -214,6 +219,20 @@ export const useGitStore = create<GitStore>((set, get) => ({
       await get().refreshStatus();
     } catch (err) {
       toast(`Push failed: ${err}`, "error");
+    }
+    set({ operationInProgress: null });
+  },
+
+  publishBranch: async () => {
+    const branch = get().branch;
+    if (!branch) return;
+    set({ operationInProgress: "publishing" });
+    try {
+      await invoke<string>("git_publish_branch", { workspaceRoot: getWorkspaceRoot(), branch });
+      toast("Branch published to remote", "success");
+      await get().refreshStatus();
+    } catch (err) {
+      toast(`Publish failed: ${err}`, "error");
     }
     set({ operationInProgress: null });
   },

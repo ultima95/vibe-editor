@@ -232,10 +232,19 @@ function applyOpacity(opacity: number) {
   root.style.setProperty("--bg-tertiary", hexToRgba(tertiary, opacity));
   root.classList.toggle("transparent-mode", opacity < 1);
   invoke("set_vibrancy", { enabled: opacity < 1 }).catch(() => {});
+  // Re-apply blur: WebKit can lose backdrop-filter after background changes
+  const blur = useSettingsStore?.getState?.()?.backgroundBlur ?? 0;
+  applyBlur(blur);
 }
 
 function applyBlur(blur: number) {
-  document.documentElement.style.setProperty("--background-blur", `${blur}px`);
+  const root = document.getElementById("root");
+  if (root) {
+    const value = blur > 0 ? `blur(${blur}px)` : "none";
+    root.style.backdropFilter = value;
+    // @ts-expect-error -- WebKit vendor prefix
+    root.style.webkitBackdropFilter = value;
+  }
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

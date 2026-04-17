@@ -59,6 +59,7 @@ pub struct BranchInfo {
 pub struct GitStatusResult {
     pub is_git_repo: bool,
     pub branch: Option<String>,
+    pub has_upstream: bool,
     pub ahead: u32,
     pub behind: u32,
     pub files: Vec<GitFileStatus>,
@@ -235,6 +236,7 @@ pub fn git_status_impl(cwd: &str) -> Result<GitStatusResult, String> {
                 return Ok(GitStatusResult {
                     is_git_repo: false,
                     branch: None,
+                    has_upstream: false,
                     ahead: 0,
                     behind: 0,
                     files: vec![],
@@ -248,23 +250,24 @@ pub fn git_status_impl(cwd: &str) -> Result<GitStatusResult, String> {
     let files = parse_porcelain_v2_status(&raw);
 
     // Get ahead/behind
-    let (ahead, behind) = if branch.is_some() {
+    let (ahead, behind, has_upstream) = if branch.is_some() {
         match run_git(cwd, &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]) {
             Ok(output) => {
                 let parts: Vec<&str> = output.trim().split('\t').collect();
                 let a = parts.first().and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
                 let b = parts.get(1).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
-                (a, b)
+                (a, b, true)
             }
-            Err(_) => (0, 0),
+            Err(_) => (0, 0, false),
         }
     } else {
-        (0, 0)
+        (0, 0, false)
     };
 
     Ok(GitStatusResult {
         is_git_repo: true,
         branch,
+        has_upstream,
         ahead,
         behind,
         files,
@@ -466,8 +469,21 @@ pub fn git_push_impl(cwd: &str) -> Result<String, String> {
     run_git(cwd, &["push"])
 }
 
+pub fn git_publish_branch_impl(cwd: &str, branch: &str) -> Result<String, String> {
+    run_git(cwd, &["push", "--set-upstream", "origin", branch])
+}
+
 pub fn git_pull_impl(cwd: &str) -> Result<String, String> {
     run_git(cwd, &["pull"])
+}
+
+pub fn git_show_file_impl(cwd: &str, hash: &str, path: &str) -> Result<String, String> {
+    let spec = format!("{}:{}", hash, path);
+    run_git(cwd, &["show", &spec])
+}
+
+pub fn git_commit_diff_impl(cwd: &str, hash: &str, path: &str) -> Result<String, String> {
+    run_git(cwd, &["diff", &format!("{}~1", hash), hash, "--", path])
 }
 
 pub fn git_commit_files_impl(cwd: &str, hash: &str) -> Result<Vec<CommitFile>, String> {
