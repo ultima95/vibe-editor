@@ -1,4 +1,5 @@
 # Vibe Editor
+![Logo](https://raw.githubusercontent.com/ultima95/vibe-editor/refs/heads/main/src-tauri/icons/Square150x150Logo.png)
 
 A terminal-first, native macOS code editor built with Tauri 2. Vibe Editor combines a Rust-powered backend for PTY management, file system operations, and Git integration with a React + TypeScript frontend featuring CodeMirror editing, xterm.js terminals, and a fully themeable UI with real window transparency.
 
