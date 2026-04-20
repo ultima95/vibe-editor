@@ -68,15 +68,41 @@ export function SearchPanel() {
       const absolutePath = workspaceRoot
         ? `${workspaceRoot}/${result.path}`
         : result.path;
-      const tab: Tab = {
-        id: `editor-${Date.now()}`,
-        type: "editor",
-        title: name,
-        filePath: absolutePath,
-        isDirty: false,
-        pendingGoToLine: result.line_number,
-      };
-      addTab(activeGroupId, tab);
+
+      // Check if a tab for this file is already open in the active group
+      const state = useTabStore.getState();
+      const group = state.groups[state.activeGroupId];
+      const existingTab = group?.tabs.find(
+        (t) => t.type === "editor" && t.filePath === absolutePath,
+      );
+
+      if (existingTab) {
+        // Reuse existing tab: activate it and set pendingGoToLine
+        useTabStore.setState((s) => ({
+          groups: {
+            ...s.groups,
+            [state.activeGroupId]: {
+              ...s.groups[state.activeGroupId],
+              activeTabId: existingTab.id,
+              tabs: s.groups[state.activeGroupId].tabs.map((t) =>
+                t.id === existingTab.id
+                  ? { ...t, pendingGoToLine: result.line_number }
+                  : t,
+              ),
+            },
+          },
+        }));
+      } else {
+        const tab: Tab = {
+          id: `editor-${Date.now()}`,
+          type: "editor",
+          title: name,
+          filePath: absolutePath,
+          isDirty: false,
+          pendingGoToLine: result.line_number,
+        };
+        addTab(activeGroupId, tab);
+      }
     },
     [addTab, activeGroupId, workspaceRoot],
   );

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Compartment, EditorState } from "@codemirror/state";
-import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { Compartment, EditorState, StateEffect, StateField } from "@codemirror/state";
+import { Decoration, DecorationSet, EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { search, searchKeymap } from "@codemirror/search";
 import { javascript } from "@codemirror/lang-javascript";
 import { rust } from "@codemirror/lang-rust";
 import { python } from "@codemirror/lang-python";
@@ -18,6 +19,32 @@ import { cmdClickExtension } from "../editor/cmd-click";
 import { Tab } from "../types";
 
 const themeCompartment = new Compartment();
+
+// Flash-highlight effect for search result jumps
+const addFlashEffect = StateEffect.define<{ from: number; to: number }>();
+const clearFlashEffect = StateEffect.define<null>();
+
+const flashField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(value, tr) {
+    for (const e of tr.effects) {
+      if (e.is(addFlashEffect)) {
+        const mark = Decoration.line({ class: "cm-flash-highlight" });
+        return Decoration.set([mark.range(e.value.from)]);
+      }
+      if (e.is(clearFlashEffect)) return Decoration.none;
+    }
+    return value;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
+
+function flashLine(view: EditorView, lineFrom: number) {
+  view.dispatch({ effects: addFlashEffect.of({ from: lineFrom, to: lineFrom }) });
+  setTimeout(() => {
+    view.dispatch({ effects: clearFlashEffect.of(null) });
+  }, 1500);
+}
 
 interface EditorTabProps {
   tabId: string;
@@ -137,7 +164,8 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
       extensions: [
         lineNumbers(),
         history(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+        search(),
         getLanguageExtension(filePath),
         themeCompartment.of(getCodeTheme(currentThemeId)),
         EditorView.theme({
@@ -145,6 +173,10 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
           ".cm-scroller": {
             fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
             fontSize: "14px",
+          },
+          ".cm-flash-highlight": {
+            backgroundColor: "rgba(59, 130, 246, 0.25) !important",
+            transition: "background-color 1.5s ease-out",
           },
         }),
         EditorView.updateListener.of((update) => {
@@ -163,6 +195,7 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
           }
         }),
         cmdClickExtension({ onOpenFile: handleCmdClickOpenFile }),
+        flashField,
       ],
     });
 
@@ -179,6 +212,7 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
         selection: { anchor: lineInfo.from },
         scrollIntoView: true,
       });
+      flashLine(view, lineInfo.from);
       // Clear the pending line
       useTabStore.setState((s) => ({
         groups: {
@@ -195,6 +229,36 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
 
     return () => { view.destroy(); };
   }, [fileContent, filePath, groupId, tabId, previewMode]);
+
+  // Watch for pendingGoToLine on already-mounted editors (e.g. search result for open file)
+  useEffect(() => {
+    const unsub = useTabStore.subscribe((s) => {
+      const tab = s.groups[groupId]?.tabs.find((t) => t.id === tabId);
+      const view = viewRef.current;
+      if (!tab?.pendingGoToLine || !view) return;
+
+      const line = Math.min(tab.pendingGoToLine, view.state.doc.lines);
+      const lineInfo = view.state.doc.line(line);
+      view.dispatch({
+        selection: { anchor: lineInfo.from },
+        scrollIntoView: true,
+      });
+      flashLine(view, lineInfo.from);
+
+      useTabStore.setState((s2) => ({
+        groups: {
+          ...s2.groups,
+          [groupId]: {
+            ...s2.groups[groupId],
+            tabs: s2.groups[groupId].tabs.map((t) =>
+              t.id === tabId ? { ...t, pendingGoToLine: undefined } : t
+            ),
+          },
+        },
+      }));
+    });
+    return () => unsub();
+  }, [groupId, tabId]);
 
   // Phase 3: Subscribe to theme changes for live hot-swap
   useEffect(() => {

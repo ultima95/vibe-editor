@@ -116,3 +116,8 @@ html, body, #root {
 .transparent-mode .cm-editor .cm-activeLineGutter {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* Hide scrollbar on tab bar while keeping it scrollable */
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}

@@ -9,7 +9,6 @@ use std::io::Read;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 use tauri::utils::config::WindowEffectsConfig;
-use tauri::utils::{WindowEffect, WindowEffectState};
 
 struct AppState {
     pty_manager: PtyManager,
@@ -221,23 +220,14 @@ fn open_new_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn set_transparency(app: AppHandle, enabled: bool) -> Result<(), String> {
+fn set_transparency(app: AppHandle, _enabled: bool) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("main window not found")?;
-    if enabled {
-        // Use native macOS NSVisualEffectView for the blur — this is stable across
-        // focus/unfocus cycles unlike CSS backdrop-filter which WebKit can drop.
-        let effects = WindowEffectsConfig {
-            effects: vec![WindowEffect::UnderWindowBackground],
-            state: Some(WindowEffectState::Active),
-            radius: None,
-            color: None,
-        };
-        window.set_effects(Some(effects)).map_err(|e| e.to_string())
-    } else {
-        window
-            .set_effects(None::<WindowEffectsConfig>)
-            .map_err(|e| e.to_string())
-    }
+    // Clear native vibrancy effects — the window is already configured with
+    // transparent: true, so semi-transparent CSS backgrounds + backdrop-filter
+    // produce real see-through blur without the native NSVisualEffectView.
+    window
+        .set_effects(None::<WindowEffectsConfig>)
+        .map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------

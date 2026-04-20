@@ -29,6 +29,7 @@ export function TabBar({
 }: TabBarProps) {
   return (
     <div
+      className="tab-bar"
       style={{
         display: "flex",
         alignItems: "center",
@@ -36,7 +37,10 @@ export function TabBar({
         borderBottom: "1px solid var(--border)",
         height: "var(--tab-height)",
         overflow: "hidden",
+        overflowX: "auto",
         flexShrink: 0,
+        scrollbarWidth: "none",          /* Firefox */
+        msOverflowStyle: "none" as any,  /* IE */
       }}
     >
       {tabs.map((tab) => {
