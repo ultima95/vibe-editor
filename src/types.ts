@@ -5,6 +5,7 @@ export interface Tab {
   ptyId?: string;
   filePath?: string;
   isDirty?: boolean;
+  pendingGoToLine?: number;
   diffCached?: boolean;
   cwd?: string;
   previewMode?: boolean;

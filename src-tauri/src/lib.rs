@@ -9,6 +9,7 @@ use std::io::Read;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 use tauri::utils::config::WindowEffectsConfig;
+use tauri::utils::{WindowEffect, WindowEffectState};
 
 struct AppState {
     pty_manager: PtyManager,
@@ -190,6 +191,11 @@ fn unwatch_directory(state: State<'_, Arc<AppState>>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+#[tauri::command]
 fn open_new_window(app: AppHandle) -> Result<(), String> {
     use std::sync::atomic::{AtomicU32, Ordering};
     static COUNTER: AtomicU32 = AtomicU32::new(1);
@@ -215,13 +221,23 @@ fn open_new_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn set_vibrancy(app: AppHandle, _enabled: bool) -> Result<(), String> {
+fn set_transparency(app: AppHandle, enabled: bool) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("main window not found")?;
-    // Clear vibrancy effects — the window is already configured with transparent: true,
-    // so semi-transparent CSS backgrounds produce real see-through transparency.
-    window
-        .set_effects(None::<WindowEffectsConfig>)
-        .map_err(|e| e.to_string())
+    if enabled {
+        // Use native macOS NSVisualEffectView for the blur — this is stable across
+        // focus/unfocus cycles unlike CSS backdrop-filter which WebKit can drop.
+        let effects = WindowEffectsConfig {
+            effects: vec![WindowEffect::UnderWindowBackground],
+            state: Some(WindowEffectState::Active),
+            radius: None,
+            color: None,
+        };
+        window.set_effects(Some(effects)).map_err(|e| e.to_string())
+    } else {
+        window
+            .set_effects(None::<WindowEffectsConfig>)
+            .map_err(|e| e.to_string())
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -451,7 +467,8 @@ pub fn run() {
             cmd_get_recent_projects,
             cmd_add_recent_project,
             unwatch_directory,
-            set_vibrancy,
+            quit_app,
+            set_transparency,
             open_new_window,
             git_status,
             git_diff,

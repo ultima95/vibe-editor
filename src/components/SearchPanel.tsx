@@ -74,6 +74,7 @@ export function SearchPanel() {
         title: name,
         filePath: absolutePath,
         isDirty: false,
+        pendingGoToLine: result.line_number,
       };
       addTab(activeGroupId, tab);
     },
@@ -157,6 +158,7 @@ function FileGroup({
   matches: TextSearchResult[];
   onSelect: (r: TextSearchResult) => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const fileName = filePath.split("/").pop() ?? filePath;
   const dir = filePath.includes("/")
     ? filePath.slice(0, filePath.lastIndexOf("/"))
@@ -165,25 +167,36 @@ function FileGroup({
   return (
     <div style={{ marginBottom: 2 }}>
       {/* File header */}
-      <div style={{
-        padding: "4px 6px",
-        fontSize: 12,
-        fontWeight: 600,
-        color: "var(--text-primary)",
-        display: "flex",
-        alignItems: "baseline",
-        gap: 6,
-      }}>
+      <div
+        onClick={() => setCollapsed((c) => !c)}
+        style={{
+          padding: "4px 6px",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--text-primary)",
+          display: "flex",
+          alignItems: "baseline",
+          gap: 6,
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
+        <span style={{ fontSize: 10, width: 12, flexShrink: 0, textAlign: "center" }}>
+          {collapsed ? "▶" : "▼"}
+        </span>
         <span>{fileName}</span>
         {dir && (
           <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 400 }}>
             {dir}
           </span>
         )}
+        <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 400, marginLeft: "auto" }}>
+          {matches.length}
+        </span>
       </div>
 
       {/* Match lines */}
-      {matches.map((m, i) => (
+      {!collapsed && matches.map((m, i) => (
         <div
           key={`${m.line_number}-${i}`}
           onClick={() => onSelect(m)}

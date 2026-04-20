@@ -82,11 +82,6 @@ pub fn list_directory(path: &str) -> Result<Vec<DirEntry>, String> {
         let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
         let name = entry.file_name().to_string_lossy().to_string();
 
-        // Skip hidden files
-        if name.starts_with('.') {
-            continue;
-        }
-
         let metadata = entry
             .metadata()
             .map_err(|e| format!("Failed to read metadata for '{}': {}", name, e))?;

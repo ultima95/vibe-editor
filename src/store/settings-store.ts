@@ -231,23 +231,64 @@ function applyOpacity(opacity: number) {
   root.style.setProperty("--bg-secondary", hexToRgba(secondary, opacity));
   root.style.setProperty("--bg-tertiary", hexToRgba(tertiary, opacity));
   root.classList.toggle("transparent-mode", opacity < 1);
-  invoke("set_vibrancy", { enabled: opacity < 1 }).catch(() => {});
-  // Re-apply blur: WebKit can lose backdrop-filter after background changes
   const blur = useSettingsStore?.getState?.()?.backgroundBlur ?? 0;
-  applyBlur(blur);
+  invoke("set_transparency", { enabled: opacity < 1 || blur > 0 }).catch(() => {});
+  syncBlurOverlay(blur);
 }
 
 function applyBlur(blur: number) {
-  const root = document.getElementById("root");
-  if (root) {
-    const value = blur > 0 ? `blur(${blur}px)` : "none";
-    root.style.backdropFilter = value;
-    // @ts-expect-error -- WebKit vendor prefix
-    root.style.webkitBackdropFilter = value;
-    // Force continuous compositing so the blur persists when the window
-    // loses focus or the user stops interacting.
-    root.style.willChange = blur > 0 ? "backdrop-filter" : "";
+  const opacity = useSettingsStore?.getState?.()?.appOpacity ?? 1;
+  invoke("set_transparency", { enabled: opacity < 1 || blur > 0 }).catch(() => {});
+  syncBlurOverlay(blur);
+}
+
+// Maintain a dedicated backdrop-filter overlay. An infinite CSS animation on
+// this element keeps WebKit's compositing layer alive so the blur persists
+// across focus/unfocus and idle states.
+function syncBlurOverlay(blur: number) {
+  const OVERLAY_ID = "vibe-blur-overlay";
+  let overlay = document.getElementById(OVERLAY_ID);
+
+  if (blur <= 0) {
+    overlay?.remove();
+    return;
   }
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = OVERLAY_ID;
+    // Insert before #root so it sits behind app content
+    const rootEl = document.getElementById("root");
+    if (rootEl) {
+      rootEl.parentElement?.insertBefore(overlay, rootEl);
+    } else {
+      document.body.prepend(overlay);
+    }
+  }
+
+  overlay.style.cssText = [
+    "position: fixed",
+    "inset: 0",
+    "z-index: -1",
+    "pointer-events: none",
+    `backdrop-filter: blur(${blur}px)`,
+    `-webkit-backdrop-filter: blur(${blur}px)`,
+    // Infinite animation keeps the compositing layer alive so WebKit doesn't
+    // tear it down on focus-loss or idle.
+    "animation: vibe-blur-keepalive 1s linear infinite",
+  ].join(";");
+
+  ensureKeepAliveKeyframes();
+}
+
+let _keyframesInjected = false;
+function ensureKeepAliveKeyframes() {
+  if (_keyframesInjected) return;
+  _keyframesInjected = true;
+  const style = document.createElement("style");
+  style.textContent =
+    "@keyframes vibe-blur-keepalive { from { opacity: 0.999; } to { opacity: 1; } }";
+  document.head.appendChild(style);
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

@@ -170,8 +170,31 @@ export function EditorTab({ tabId, groupId, filePath, isActive, previewMode }: E
     viewRef.current = view;
     setLoading(false);
 
+    // Jump to pending line from search results
+    const tabState = useTabStore.getState().groups[groupId]?.tabs.find((t) => t.id === tabId);
+    if (tabState?.pendingGoToLine) {
+      const line = Math.min(tabState.pendingGoToLine, view.state.doc.lines);
+      const lineInfo = view.state.doc.line(line);
+      view.dispatch({
+        selection: { anchor: lineInfo.from },
+        scrollIntoView: true,
+      });
+      // Clear the pending line
+      useTabStore.setState((s) => ({
+        groups: {
+          ...s.groups,
+          [groupId]: {
+            ...s.groups[groupId],
+            tabs: s.groups[groupId].tabs.map((t) =>
+              t.id === tabId ? { ...t, pendingGoToLine: undefined } : t
+            ),
+          },
+        },
+      }));
+    }
+
     return () => { view.destroy(); };
-  }, [fileContent, filePath, groupId, tabId]);
+  }, [fileContent, filePath, groupId, tabId, previewMode]);
 
   // Phase 3: Subscribe to theme changes for live hot-swap
   useEffect(() => {

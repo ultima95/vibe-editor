@@ -10,6 +10,7 @@ import { useTabStore, createTerminalTab } from "./store/tab-store";
 import { useAppStore } from "./store/app-store";
 import { useSettingsStore } from "./store/settings-store";
 import { ToastContainer } from "./components/Toast";
+import { HoldToQuit } from "./components/HoldToQuit";
 import "./styles/globals.css";
 
 function App() {
@@ -72,6 +73,13 @@ function App() {
       if (e.metaKey && e.key === "p") {
         e.preventDefault();
         setFuzzyFinderOpen((o) => !o);
+      }
+      // Cmd+Shift+E: focus file tree panel
+      if (e.metaKey && e.shiftKey && e.key === "e") {
+        e.preventDefault();
+        const sidebar = useSidebarStore.getState();
+        if (!sidebar.visible) sidebar.toggle();
+        sidebar.setActivePanel("files");
       }
       // Cmd+Shift+F: focus search panel
       if (e.metaKey && e.shiftKey && e.key === "f") {
@@ -140,6 +148,7 @@ function App() {
         <WelcomeScreen onOpenFolder={openFolderDialog} />
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
         <ToastContainer />
+        <HoldToQuit />
       </>
     );
   }
@@ -153,6 +162,7 @@ function App() {
       />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       <ToastContainer />
+      <HoldToQuit />
     </>
   );
 }
