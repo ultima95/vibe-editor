@@ -28,7 +28,8 @@ export function FuzzyFinder({ isOpen, onClose }: FuzzyFinderProps) {
       setQuery("");
       setResults([]);
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 

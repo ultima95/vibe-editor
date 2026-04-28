@@ -26,15 +26,16 @@ function App() {
     }
   }, []);
 
-  // When workspace opens, replace any cwd-less terminal tabs with ones rooted in the workspace
+  // When workspace opens, update terminal tabs to use the new workspace root
   useEffect(() => {
     if (!workspaceRoot) return;
     const { groups } = useTabStore.getState();
     for (const [groupId, group] of Object.entries(groups)) {
       const updatedTabs = group.tabs.map((tab) =>
-        tab.type === "terminal" && !tab.cwd ? { ...tab, cwd: workspaceRoot } : tab
+        tab.type === "terminal" && tab.cwd !== workspaceRoot ? { ...tab, cwd: workspaceRoot } : tab
       );
-      if (updatedTabs !== group.tabs) {
+      const changed = updatedTabs.some((t, i) => t !== group.tabs[i]);
+      if (changed) {
         useTabStore.setState((s) => ({
           groups: {
             ...s.groups,
@@ -81,12 +82,17 @@ function App() {
         if (!sidebar.visible) sidebar.toggle();
         sidebar.setActivePanel("files");
       }
-      // Cmd+Shift+F: focus search panel
+      // Cmd+Shift+F: focus search panel with selected text
       if (e.metaKey && e.shiftKey && e.key === "f") {
         e.preventDefault();
         const sidebar = useSidebarStore.getState();
         if (!sidebar.visible) sidebar.toggle();
         sidebar.setActivePanel("search");
+        // Pass selected text from active editor to search panel
+        const selection = window.getSelection()?.toString()?.trim();
+        if (selection) {
+          sidebar.setSearchQuery(selection);
+        }
       }
       // Cmd+B: toggle sidebar
       if (e.metaKey && e.key === "b") {

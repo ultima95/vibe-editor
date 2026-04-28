@@ -109,9 +109,10 @@ impl PtyManager {
 
     pub fn kill_pty(&self, id: &str) -> Result<(), String> {
         let mut instances = self.instances.lock();
-        instances
-            .remove(id)
-            .ok_or_else(|| format!("PTY not found: {}", id))?;
+        if let Some(mut instance) = instances.remove(id) {
+            // Kill the child process explicitly to ensure the reader thread exits
+            instance._child.kill().ok();
+        }
         Ok(())
     }
 

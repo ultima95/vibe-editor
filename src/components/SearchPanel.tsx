@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store/app-store";
 import { useTabStore } from "../store/tab-store";
+import { useSidebarStore } from "../store/sidebar-store";
 import { Tab } from "../types";
 
 interface TextSearchResult {
@@ -23,6 +24,25 @@ export function SearchPanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const workspaceRoot = useAppStore((s) => s.workspaceRoot);
   const { addTab, activeGroupId } = useTabStore();
+
+  // Pick up search query passed from Cmd+Shift+F with selection
+  useEffect(() => {
+    const unsub = useSidebarStore.subscribe((state) => {
+      if (state.searchQuery && state.activePanel === "search") {
+        setQuery(state.searchQuery);
+        useSidebarStore.getState().setSearchQuery("");
+        // Auto-focus the input
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
+    });
+    // Check on mount too
+    const initial = useSidebarStore.getState();
+    if (initial.searchQuery && initial.activePanel === "search") {
+      setQuery(initial.searchQuery);
+      useSidebarStore.getState().setSearchQuery("");
+    }
+    return () => unsub();
+  }, []);
 
   const doSearch = useCallback(async () => {
     const trimmed = query.trim();

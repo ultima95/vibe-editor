@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Tab } from "../types";
 import { Terminal, FileCode, GitCompare, GitCommitHorizontal, BookOpen, Code, PanelRight } from "lucide-react";
 import { startTabDrag } from "../hooks/use-tab-drag";
+import { ContextMenu } from "./ContextMenu";
+import { useAppStore } from "../store/app-store";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 interface TabBarProps {
   tabs: Tab[];
@@ -27,7 +31,39 @@ export function TabBar({
   showPreviewToggle,
   isPreviewActive,
 }: TabBarProps) {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tab: Tab } | null>(null);
+  const workspaceRoot = useAppStore((s) => s.workspaceRoot) ?? "";
+
+  const getContextMenuItems = (tab: Tab) => {
+    const items: { label: string; onClick: () => void; danger?: boolean }[] = [];
+
+    if (tab.filePath) {
+      const relativePath = workspaceRoot && tab.filePath.startsWith(workspaceRoot)
+        ? tab.filePath.slice(workspaceRoot.length + 1)
+        : tab.filePath;
+
+      items.push(
+        { label: "Copy Path", onClick: () => navigator.clipboard.writeText(tab.filePath!).catch(console.error) },
+        { label: "Copy Relative Path", onClick: () => navigator.clipboard.writeText(relativePath).catch(console.error) },
+        { label: "Reveal in Finder", onClick: () => revealItemInDir(tab.filePath!).catch(console.error) },
+      );
+    }
+
+    items.push(
+      { label: "Close", onClick: () => onCloseTab(tab.id) },
+      {
+        label: "Close Others",
+        onClick: () => {
+          tabs.filter((t) => t.id !== tab.id).forEach((t) => onCloseTab(t.id));
+        },
+      },
+    );
+
+    return items;
+  };
+
   return (
+    <>
     <div
       className="tab-bar"
       style={{
@@ -54,6 +90,11 @@ export function TabBar({
               startTabDrag(e, { tabId: tab.id, fromGroupId: groupId, tab }, tab.title);
             }}
             onClick={() => onSelectTab(tab.id)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setContextMenu({ x: e.clientX, y: e.clientY, tab });
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -152,5 +193,14 @@ export function TabBar({
         </button>
       </div>
     </div>
+    {contextMenu && (
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={getContextMenuItems(contextMenu.tab)}
+        onClose={() => setContextMenu(null)}
+      />
+    )}
+    </>
   );
 }

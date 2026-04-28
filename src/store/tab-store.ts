@@ -3,6 +3,26 @@ import { Tab, TabGroup, SplitNode, SplitDirection } from "../types";
 
 let nextGroupNum = 1;
 
+/** Find an already-open editor tab by file path across all groups. */
+export function findOpenTab(filePath: string): { groupId: string; tab: Tab } | null {
+  const { groups } = useTabStore.getState();
+  for (const [gid, group] of Object.entries(groups)) {
+    const tab = group.tabs.find((t) => t.type === "editor" && t.filePath === filePath);
+    if (tab) return { groupId: gid, tab };
+  }
+  return null;
+}
+
+/** Focus an existing tab, or return false if not found. */
+export function focusExistingTab(filePath: string): boolean {
+  const found = findOpenTab(filePath);
+  if (!found) return false;
+  const { setActiveTab, setActiveGroupId } = useTabStore.getState();
+  setActiveTab(found.groupId, found.tab.id);
+  setActiveGroupId(found.groupId);
+  return true;
+}
+
 export function createTerminalTab(cwd?: string): Tab {
   const id = `terminal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   return { id, type: "terminal", title: "Terminal", cwd };

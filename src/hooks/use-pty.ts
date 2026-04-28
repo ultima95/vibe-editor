@@ -17,10 +17,12 @@ export interface SpawnResult {
 
 export function usePty() {
   const ptyIdRef = useRef<string | null>(null);
+  const spawnGenRef = useRef(0);
 
   const spawn = useCallback(async (opts: SpawnOptions): Promise<SpawnResult> => {
     const { cols, rows, cwd, onData, onExit } = opts;
     const id = crypto.randomUUID();
+    const gen = ++spawnGenRef.current;
 
     const unlistenOutput = await listen<string>(
       `pty-output-${id}`,
@@ -31,9 +33,18 @@ export function usePty() {
       () => onExit()
     );
 
-    await invoke("spawn_pty", { id, cols, rows, cwd });
+    try {
+      await invoke("spawn_pty", { id, cols, rows, cwd });
+    } catch (err) {
+      unlistenOutput();
+      unlistenExit();
+      throw err;
+    }
 
-    ptyIdRef.current = id;
+    // Only claim ownership if no newer spawn has started
+    if (spawnGenRef.current === gen) {
+      ptyIdRef.current = id;
+    }
 
     const cleanup = async () => {
       unlistenOutput();

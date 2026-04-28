@@ -3,11 +3,11 @@ import { StateField, StateEffect } from "@codemirror/state";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 // Matches http:// and https:// URLs
-const URL_RE = /https?:\/\/[^\s"'`)<>\]},;]+/g;
+const URL_RE = /https?:\/\/[^\s"'`)<>\]},;]+(?<=[^\s.,;:!?])/g;
 
 // Matches file-like paths: ./foo, ../foo, /absolute, or bare relative like src/foo.ts
 // Must contain at least one slash and a file extension or end with a known dir-like segment
-const FILE_PATH_RE = /(?:\.\.?\/|\/)[^\s"'`)<>\]},;:]+/g;
+const FILE_PATH_RE = /(?:\.\.?\/|\/)[^\s"'`)<>\]},;:]+(?<=[^\s.,;:!?])/g;
 
 interface CmdClickCallbacks {
   onOpenFile: (path: string) => void;

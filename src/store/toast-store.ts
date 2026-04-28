@@ -12,15 +12,25 @@ interface ToastStore {
   removeToast: (id: string) => void;
 }
 
+const toastTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
   addToast: (message, type) => {
     const id = `toast-${Date.now()}`;
     set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      toastTimers.delete(id);
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
     }, 4000);
+    toastTimers.set(id, timer);
   },
-  removeToast: (id) =>
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  removeToast: (id) => {
+    const timer = toastTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimers.delete(id);
+    }
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+  },
 }));

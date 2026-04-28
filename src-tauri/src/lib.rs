@@ -423,6 +423,13 @@ async fn git_commit_diff(workspace_root: String, hash: String, path: String) -> 
         .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+async fn git_blame(workspace_root: String, path: String) -> Result<Vec<git_service::BlameLine>, String> {
+    tokio::task::spawn_blocking(move || git_service::git_blame_impl(&workspace_root, &path))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -487,6 +494,7 @@ pub fn run() {
             git_commit_files,
             git_show_file,
             git_commit_diff,
+            git_blame,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

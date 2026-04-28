@@ -3,6 +3,7 @@ import { useFileSystem, DirEntry } from "../hooks/use-file-system";
 import { ContextMenu } from "./ContextMenu";
 import { useGitStore } from "../store/git-store";
 import { useAppStore } from "../store/app-store";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
 import { FileIcon } from "./fileIcons";
 
@@ -11,9 +12,11 @@ interface FileTreeNodeProps {
   depth: number;
   onFileClick: (path: string, name: string) => void;
   onRefresh?: () => void;
+  revealPath?: string | null;
+  fsGeneration?: number;
 }
 
-export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeNodeProps) {
+export function FileTreeNode({ entry, depth, onFileClick, onRefresh, revealPath, fsGeneration }: FileTreeNodeProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirEntry[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -27,6 +30,20 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
       listDirectory(entry.path).then(setChildren).catch(console.error);
     }
   }, [expanded, entry.path, entry.is_dir]);
+
+  // Re-fetch children when file system changes
+  useEffect(() => {
+    if (expanded && entry.is_dir && fsGeneration) {
+      listDirectory(entry.path).then(setChildren).catch(console.error);
+    }
+  }, [fsGeneration]);
+
+  // Auto-expand directory when revealPath is inside it
+  useEffect(() => {
+    if (revealPath && entry.is_dir && revealPath.startsWith(entry.path + "/") && !expanded) {
+      setExpanded(true);
+    }
+  }, [revealPath, entry.path, entry.is_dir]);
 
   useEffect(() => {
     if (renaming && renameRef.current) {
@@ -103,7 +120,22 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
     }
   };
 
+  const handleCopyPath = () => {
+    navigator.clipboard.writeText(entry.path).catch(console.error);
+  };
+
+  const handleCopyRelativePath = () => {
+    navigator.clipboard.writeText(relativePath).catch(console.error);
+  };
+
+  const handleRevealInFinder = () => {
+    revealItemInDir(entry.path).catch(console.error);
+  };
+
   const menuItems = [
+    { label: "Copy Path", onClick: handleCopyPath },
+    { label: "Copy Relative Path", onClick: handleCopyRelativePath },
+    { label: "Reveal in Finder", onClick: handleRevealInFinder },
     { label: "Rename", onClick: handleRename },
     { label: "Duplicate", onClick: handleDuplicate },
     { label: "Delete", onClick: handleDelete, danger: true },
@@ -175,10 +207,20 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
 
   const nameColor = gitStatusColor(effectiveStatus) ?? "var(--text-primary)";
   const isDeletedFile = effectiveStatus === "Deleted";
+  const isRevealTarget = revealPath === entry.path;
+
+  // Scroll into view when this node is the reveal target
+  const nodeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isRevealTarget && nodeRef.current) {
+      nodeRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [isRevealTarget]);
 
   return (
     <>
       <div
+        ref={nodeRef}
         onClick={toggle}
         onContextMenu={handleContextMenu}
         style={{
@@ -194,12 +236,15 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
+          background: isRevealTarget ? "rgba(59, 130, 246, 0.15)" : "transparent",
         }}
         onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "rgba(148, 163, 184, 0.08)")
+          ((e.currentTarget as HTMLElement).style.background =
+            isRevealTarget ? "rgba(59, 130, 246, 0.22)" : "rgba(148, 163, 184, 0.08)")
         }
         onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "transparent")
+          ((e.currentTarget as HTMLElement).style.background =
+            isRevealTarget ? "rgba(59, 130, 246, 0.15)" : "transparent")
         }
       >
         {entry.is_dir ? (
@@ -291,6 +336,8 @@ export function FileTreeNode({ entry, depth, onFileClick, onRefresh }: FileTreeN
             depth={depth + 1}
             onFileClick={onFileClick}
             onRefresh={refreshChildren}
+            revealPath={revealPath}
+            fsGeneration={fsGeneration}
           />
         ))}
     </>

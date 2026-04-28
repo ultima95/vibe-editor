@@ -4,7 +4,11 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { usePty } from "../hooks/use-pty";
 import { useSettingsStore } from "../store/settings-store";
+import { useTabStore, focusExistingTab } from "../store/tab-store";
+import { useAppStore } from "../store/app-store";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { ITheme } from "@xterm/xterm";
+import { Tab } from "../types";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalPalette {
@@ -174,11 +178,52 @@ function getTerminalTheme(uiThemeId: string, opacity = 1): ITheme {
 }
 
 interface TerminalTabProps {
+  tabId?: string;
   cwd?: string;
   isActive: boolean;
 }
 
-export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
+// Detect file paths in terminal output: absolute paths, ~/paths, and URLs
+// Require at least one directory separator after the leading / or ~/ to avoid matching "1/5", "on/off" etc.
+const TERM_PATH_RE = /(?:~\/[^\s"'`)<>\]},;:\x1b\x00-\x1f]+|\/[a-zA-Z0-9_.][^\s"'`)<>\]},;:\x1b\x00-\x1f]*\/[^\s"'`)<>\]},;:\x1b\x00-\x1f]+)/;
+const TERM_URL_RE = /https?:\/\/[^\s"'`)<>\]},;\x1b\x00-\x1f]+/;
+
+function openFileInEditor(filePath: string) {
+  // Expand ~ to home dir (supports macOS /Users and Linux /home)
+  let resolved = filePath;
+  if (resolved.startsWith("~/")) {
+    const root = useAppStore.getState().workspaceRoot ?? "";
+    const homeMatch = root.match(/^(\/(?:Users|home)\/[^/]+)/);
+    if (homeMatch) {
+      resolved = homeMatch[1] + resolved.slice(1);
+    }
+  }
+
+  // Check if already open
+  if (focusExistingTab(resolved)) return;
+
+  const fileName = resolved.split("/").pop() || resolved;
+  const tab: Tab = {
+    id: `editor-${Date.now()}`,
+    type: "editor",
+    title: fileName,
+    filePath: resolved,
+    isDirty: false,
+  };
+  const { addTab, activeGroupId } = useTabStore.getState();
+  addTab(activeGroupId, tab);
+}
+
+// Terminal instance registry to preserve terminals across React remounts
+const terminalRegistry = new Map<string, {
+  terminal: Terminal;
+  fitAddon: FitAddon;
+  ptyCleanup: (() => Promise<void>) | null;
+  container: HTMLDivElement;
+  cwd?: string;
+}>();
+
+export function TerminalTab({ tabId, cwd, isActive }: TerminalTabProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -188,10 +233,48 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const registryKey = tabId ?? "";
+
+    // Check registry for existing terminal (survives React remounts from layout changes)
+    const cached = registryKey ? terminalRegistry.get(registryKey) : null;
+    if (cached && cached.cwd === cwd) {
+      // Reattach existing terminal to new container
+      containerRef.current.appendChild(cached.container);
+      terminalRef.current = cached.terminal;
+      fitAddonRef.current = cached.fitAddon;
+      // Refit after reattach
+      requestAnimationFrame(() => {
+        cached.fitAddon.fit();
+        const dims = cached.fitAddon.proposeDimensions();
+        if (dims) resize(dims.cols, dims.rows);
+      });
+      return () => {
+        // Detach DOM but keep terminal alive in registry
+        if (cached.container.parentElement === containerRef.current) {
+          containerRef.current?.removeChild(cached.container);
+        }
+        terminalRef.current = null;
+        fitAddonRef.current = null;
+      };
+    }
+
+    // cwd changed — clean up stale cached terminal before spawning a new one
+    if (cached) {
+      terminalRegistry.delete(registryKey);
+      cached.terminal.dispose();
+      cached.ptyCleanup?.().catch(console.error);
+    }
+
     let cancelled = false;
     let ptyCleanup: (() => Promise<void>) | null = null;
 
     const { colorTheme, appOpacity } = useSettingsStore.getState();
+
+    // Create a wrapper div so we can detach/reattach the terminal DOM
+    const termContainer = document.createElement("div");
+    termContainer.style.width = "100%";
+    termContainer.style.height = "100%";
+    containerRef.current.appendChild(termContainer);
 
     const terminal = new Terminal({
       fontSize: 14,
@@ -205,7 +288,7 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
 
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
-    terminal.open(containerRef.current);
+    terminal.open(termContainer);
 
     // Load WebGL addon for better rendering (skip when transparent - WebGL canvas blocks transparency)
     if (appOpacity >= 1) {
@@ -219,6 +302,56 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
     }
 
     fitAddon.fit();
+
+    // CMD+click to open file paths / URLs in terminal output
+    termContainer.addEventListener("mousedown", (e: MouseEvent) => {
+      if (!e.metaKey) return;
+
+      const buffer = terminal.buffer.active;
+
+      // Calculate cell position from mouse coordinates using public APIs
+      const rect = termContainer.getBoundingClientRect();
+      if (terminal.cols === 0 || terminal.rows === 0) return;
+      const cellWidth = rect.width / terminal.cols;
+      const cellHeight = rect.height / terminal.rows;
+      const col = Math.floor((e.clientX - rect.left) / cellWidth);
+      const row = Math.floor((e.clientY - rect.top) / cellHeight);
+
+      // Get the full line text
+      const line = buffer.getLine(row + buffer.viewportY);
+      if (!line) return;
+
+      let lineText = "";
+      for (let i = 0; i < line.length; i++) {
+        lineText += line.getCell(i)?.getChars() || " ";
+      }
+      lineText = lineText.trimEnd();
+
+      // Find URL or file path at click position
+
+      // Check URLs first
+      let match: RegExpExecArray | null;
+      const urlRe = new RegExp(TERM_URL_RE.source, "g");
+      while ((match = urlRe.exec(lineText)) !== null) {
+        if (col >= match.index && col <= match.index + match[0].length) {
+          e.preventDefault();
+          e.stopPropagation();
+          openUrl(match[0]).catch(console.error);
+          return;
+        }
+      }
+
+      // Check file paths
+      const pathRe = new RegExp(TERM_PATH_RE.source, "g");
+      while ((match = pathRe.exec(lineText)) !== null) {
+        if (col >= match.index && col <= match.index + match[0].length) {
+          e.preventDefault();
+          e.stopPropagation();
+          openFileInEditor(match[0]);
+          return;
+        }
+      }
+    });
 
     // Shift+Enter sends newline instead of carriage return
     terminal.attachCustomKeyEventHandler((ev) => {
@@ -241,7 +374,11 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
       rows: dims?.rows ?? 24,
       cwd,
       onData: (data) => terminal.write(data),
-      onExit: () => terminal.write("\r\n[Process exited]\r\n"),
+      onExit: () => {
+        terminal.write("\r\n[Process exited]\r\n");
+        // Clean up registry on exit
+        if (registryKey) terminalRegistry.delete(registryKey);
+      },
     }).then(({ cleanup }) => {
       if (cancelled) {
         cleanup();
@@ -249,6 +386,17 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
       }
       ptyCleanup = cleanup;
       if (dims) resize(dims.cols, dims.rows);
+
+      // Store in registry
+      if (registryKey) {
+        terminalRegistry.set(registryKey, {
+          terminal,
+          fitAddon,
+          ptyCleanup: cleanup,
+          container: termContainer,
+          cwd,
+        });
+      }
     }).catch((err) => {
       if (!cancelled) {
         console.error("Failed to spawn PTY:", err);
@@ -258,12 +406,41 @@ export function TerminalTab({ cwd, isActive }: TerminalTabProps) {
 
     return () => {
       cancelled = true;
+      // If in registry, just detach DOM (don't destroy)
+      if (registryKey && terminalRegistry.has(registryKey)) {
+        if (termContainer.parentElement === containerRef.current) {
+          containerRef.current?.removeChild(termContainer);
+        }
+        terminalRef.current = null;
+        fitAddonRef.current = null;
+        // Schedule cleanup if tab was actually removed (not just layout change)
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const state = useTabStore.getState();
+            const stillExists = Object.values(state.groups).some(
+              (g) => g.tabs.some((t) => t.id === registryKey)
+            );
+            if (!stillExists) {
+              const entry = terminalRegistry.get(registryKey);
+              if (entry) {
+                terminalRegistry.delete(registryKey);
+                entry.terminal.dispose();
+                entry.ptyCleanup?.().catch(console.error);
+              }
+            }
+          }, 100);
+        });
+        return;
+      }
+      // Not in registry - full cleanup
       terminal.dispose();
       terminalRef.current = null;
       fitAddonRef.current = null;
-      ptyCleanup?.();
+      ptyCleanup?.().catch((err) =>
+        console.error("PTY cleanup failed:", err)
+      );
     };
-  }, [spawn, write, resize, cwd]);
+  }, [tabId, spawn, write, resize, cwd]);
 
   // Handle resize when tab becomes active or window resizes
   useEffect(() => {

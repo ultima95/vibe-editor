@@ -49,6 +49,15 @@ pub struct CommitFile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlameLine {
+    pub line_number: u32,
+    pub hash: String,
+    pub author: String,
+    pub date: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BranchInfo {
     pub name: String,
     pub is_current: bool,
@@ -517,4 +526,70 @@ pub fn git_commit_files_impl(cwd: &str, hash: &str) -> Result<Vec<CommitFile>, S
         }
     }
     Ok(files)
+}
+
+pub fn git_blame_impl(cwd: &str, path: &str) -> Result<Vec<BlameLine>, String> {
+    let raw = run_git(cwd, &["blame", "--porcelain", path])?;
+    let mut results: Vec<BlameLine> = Vec::new();
+    let mut current_hash = String::new();
+    let mut current_author = String::new();
+    let mut current_date = String::new();
+    let mut current_line_number: u32 = 0;
+    let mut headers_seen: std::collections::HashMap<String, (String, String)> = std::collections::HashMap::new();
+
+    for line in raw.lines() {
+        if line.is_empty() {
+            continue;
+        }
+
+        // Header line: <hash> <orig_line> <final_line> [<num_lines>]
+        if line.len() >= 40 && line.chars().take(40).all(|c| c.is_ascii_hexdigit()) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            current_hash = parts[0].to_string();
+            if parts.len() >= 3 {
+                current_line_number = parts[2].parse().unwrap_or(0);
+            }
+            // Reuse cached author/date if we've seen this commit before
+            if let Some((author, date)) = headers_seen.get(&current_hash) {
+                current_author = author.clone();
+                current_date = date.clone();
+            }
+        } else if let Some(author) = line.strip_prefix("author ") {
+            current_author = author.to_string();
+        } else if let Some(time) = line.strip_prefix("author-time ") {
+            // Convert unix timestamp to relative date
+            if let Ok(ts) = time.trim().parse::<i64>() {
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs() as i64)
+                    .unwrap_or(0);
+                let diff = now - ts;
+                current_date = if diff < 60 {
+                    "just now".to_string()
+                } else if diff < 3600 {
+                    format!("{} min ago", diff / 60)
+                } else if diff < 86400 {
+                    format!("{} hours ago", diff / 3600)
+                } else if diff < 2592000 {
+                    format!("{} days ago", diff / 86400)
+                } else if diff < 31536000 {
+                    format!("{} months ago", diff / 2592000)
+                } else {
+                    format!("{} years ago", diff / 31536000)
+                };
+            }
+        } else if let Some(content) = line.strip_prefix('\t') {
+            // This is the actual line content - marks end of a blame entry
+            headers_seen.insert(current_hash.clone(), (current_author.clone(), current_date.clone()));
+            results.push(BlameLine {
+                line_number: current_line_number,
+                hash: current_hash[..8.min(current_hash.len())].to_string(),
+                author: current_author.clone(),
+                date: current_date.clone(),
+                content: content.to_string(),
+            });
+        }
+    }
+
+    Ok(results)
 }
